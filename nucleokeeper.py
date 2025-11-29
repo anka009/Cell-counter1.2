@@ -172,18 +172,18 @@ if uploaded_file.name != st.session_state.last_file:
 col1, col2 = st.columns([2, 1])
 with col2:
     st.sidebar.markdown("### Parameter")
-    calib_radius = st.sidebar.slider("Kalibrier-Radius (px, Originalbild)", 1, 30, 5)
+    calib_radius = st.sidebar.slider("Kalibrier-Radius (px, Originalbild)", 1, 30, 10)
     detection_threshold = st.sidebar.slider(
         "Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)",
         0.01, 0.9, 0.2, 0.01
     )
     min_area_orig = st.sidebar.number_input(
         "Minimale Konturfläche (px, Originalbild)",
-        min_value=1, max_value=5000, value=1000, step=1
+        min_value=1, max_value=10000, value=2000, step=1
     )
     dedup_dist_orig = st.sidebar.number_input(
         "Dedup-Distanz (px, Originalbild)",
-        min_value=1, max_value=2000, value=100, step=1
+        min_value=1, max_value=1000, value=20, step=1
     )
 
     # 👉 Neue Morphologie-Parameter
