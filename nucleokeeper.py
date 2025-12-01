@@ -35,7 +35,7 @@ def draw_scale_bar(img_disp, scale, length_orig=100, bar_height=10, margin=20, c
 
     # Beschriftung mit Original-Pixeln
     cv2.putText(img_disp, f"{length_orig} px", (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
     return img_disp
 
 def is_near(p1, p2, r=6):
