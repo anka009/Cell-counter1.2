@@ -219,7 +219,7 @@ if uploaded_file.name != st.session_state.last_file:
 
 col1, col2 = st.columns([2, 1])
 with col2:
-    # -------------------- Sidebar: Parameter --------------------
+# -------------------- Sidebar: Parameter --------------------
 calib_radius = st.sidebar.slider("Kalibrier-Radius (px, Originalbild)", 1, 30, 10, key="calib_radius")
 detection_threshold = st.sidebar.slider("Threshold (0-1)", 0.01, 0.9, 0.2, 0.01, key="detection_threshold")
 min_area_orig = st.sidebar.number_input("Minimale Konturfläche (px, Originalbild)", min_value=1, max_value=10000, value=1000, step=1, key="min_area_orig")
