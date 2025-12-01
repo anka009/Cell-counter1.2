@@ -10,7 +10,7 @@ st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", la
 st.title("🧬 Iterative Kern-Zählung — V.2")
 
 # -------------------- Hilfsfunktionen --------------------
-def draw_scale_bar(img_disp, scale, length_orig=100, bar_height=5, margin=10, color=(0,0,0)):
+def draw_scale_bar(img_disp, scale, length_orig=100, bar_height=10, margin=20, color=(0,0,0)):
     """
     Zeichnet eine Skala basierend auf Original-Bildpixeln.
     img_disp: Display-Bild (numpy array)
@@ -246,7 +246,7 @@ image_disp = cv2.resize(image_orig, (DISPLAY_WIDTH, H_disp), interpolation=cv2.I
 # -------------------- Draw existing points on display canvas --------------------
 display_canvas = image_disp.copy()
 # Skala einbauen (100 Original-Pixel)
-display_canvas = draw_scale_bar(display_canvas, scale, length_orig=100, bar_height=3, color=(0,0,0))
+display_canvas = draw_scale_bar(display_canvas, scale, length_orig=100, bar_height=15, color=(0,0,0))
 
 # draw groups with colors and labels; groups store points in ORIGINAL coords
 PRESET_COLORS = [
