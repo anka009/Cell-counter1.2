@@ -139,7 +139,7 @@ for k in ["groups","all_points","last_file","disp_width","C_cache","last_M_hash"
                 with open(PRESET_FILE,"r") as f:
                     st.session_state[k]=json.load(f)
             else:
-                st.session_state[k"] = {}
+                st.session_state[k] = {}
         else:
             st.session_state[k]=None
 
