@@ -10,7 +10,7 @@ st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", la
 st.title("🧬 Iterative Kern-Zählung — V.2")
 
 # -------------------- Hilfsfunktionen --------------------
-def draw_scale_bar(img_disp, scale, length_orig=1000, bar_height=10, margin=20, color=(0,0,0)):
+def draw_scale_bar(img_disp, scale, length_orig=100, bar_height=5, margin=10, color=(0,0,0)):
     """
     Zeichnet eine Skala basierend auf Original-Bildpixeln.
     img_disp: Display-Bild (numpy array)
