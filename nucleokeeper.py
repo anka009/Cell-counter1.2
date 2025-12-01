@@ -278,17 +278,17 @@ if st.sidebar.button("Preset löschen"):
             json.dump(st.session_state.presets, f, indent=4)
         st.sidebar.success(f"Preset '{preset_choice}' gelöscht!")
 
-    st.sidebar.markdown("### Startvektoren (optional, RGB)")
-    hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
-    aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
+st.sidebar.markdown("### Startvektoren (optional, RGB)")
+hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
+aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
 
-    # parse start vectors safely
-    try:
-        hema_vec0 = np.array([float(x.strip()) for x in hema_default.split(",")], dtype=float)
-        aec_vec0 = np.array([float(x.strip()) for x in aec_default.split(",")], dtype=float)
-    except Exception:
-        hema_vec0 = np.array([0.65, 0.70, 0.29], dtype=float)
-        aec_vec0 = np.array([0.27, 0.57, 0.78], dtype=float)
+# parse start vectors safely
+try:
+    hema_vec0 = np.array([float(x.strip()) for x in hema_default.split(",")], dtype=float)
+    aec_vec0 = np.array([float(x.strip()) for x in aec_default.split(",")], dtype=float)
+except Exception:
+    hema_vec0 = np.array([0.65, 0.70, 0.29], dtype=float)
+    aec_vec0 = np.array([0.27, 0.57, 0.78], dtype=float)
 
 with col1:
     DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
