@@ -245,8 +245,8 @@ image_disp = cv2.resize(image_orig, (DISPLAY_WIDTH, H_disp), interpolation=cv2.I
 
 # -------------------- Draw existing points on display canvas --------------------
 display_canvas = image_disp.copy()
-# Skala einbauen (1000 Original-Pixel)
-display_canvas = draw_scale_bar(display_canvas, scale, length_orig=1000, bar_height=15, color=(0,0,0))
+# Skala einbauen (100 Original-Pixel)
+display_canvas = draw_scale_bar(display_canvas, scale, length_orig=100, bar_height=5, color=(0,0,0))
 
 # draw groups with colors and labels; groups store points in ORIGINAL coords
 PRESET_COLORS = [
