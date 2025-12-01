@@ -10,6 +10,34 @@ st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", la
 st.title("🧬 Iterative Kern-Zählung — V.2")
 
 # -------------------- Hilfsfunktionen --------------------
+def draw_scale_bar(img_disp, scale, length_orig=1000, bar_height=10, margin=20, color=(0,0,0)):
+    """
+    Zeichnet eine Skala basierend auf Original-Bildpixeln.
+    img_disp: Display-Bild (numpy array)
+    scale: Verhältnis Display/Original (float)
+    length_orig: Länge der Skala in Original-Pixeln
+    bar_height: Höhe des Balkens in Display-Pixeln
+    margin: Abstand vom unteren Rand (Display-Pixel)
+    color: Farbe (BGR)
+    """
+    h, w = img_disp.shape[:2]
+    # Länge in Display-Pixeln berechnen
+    length_disp = int(round(length_orig * scale))
+
+    # Start- und Endkoordinaten
+    x1 = margin
+    y1 = h - margin - bar_height
+    x2 = x1 + length_disp
+    y2 = h - margin
+
+    # Balken zeichnen
+    cv2.rectangle(img_disp, (x1, y1), (x2, y2), color, -1)
+
+    # Beschriftung mit Original-Pixeln
+    cv2.putText(img_disp, f"{length_orig} px", (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+    return img_disp
+
 def is_near(p1, p2, r=6):
     return np.linalg.norm(np.array(p1) - np.array(p2)) < r
 
@@ -217,6 +245,9 @@ image_disp = cv2.resize(image_orig, (DISPLAY_WIDTH, H_disp), interpolation=cv2.I
 
 # -------------------- Draw existing points on display canvas --------------------
 display_canvas = image_disp.copy()
+# Skala einbauen (1000 Original-Pixel)
+display_canvas = draw_scale_bar(display_canvas, scale, length_orig=1000, bar_height=15, color=(0,0,0))
+
 # draw groups with colors and labels; groups store points in ORIGINAL coords
 PRESET_COLORS = [
     (220, 20, 60),    # crimson
