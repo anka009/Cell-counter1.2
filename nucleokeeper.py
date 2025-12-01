@@ -5,26 +5,6 @@ import cv2
 from PIL import Image
 from streamlit_image_coordinates import streamlit_image_coordinates
 import pandas as pd
-import json
-import os
-
-PRESET_FILE = "presets.json"
-
-if "presets" not in st.session_state:
-    if os.path.exists(PRESET_FILE):
-        with open(PRESET_FILE, "r") as f:
-            st.session_state.presets = json.load(f)
-    else:
-        st.session_state.presets = {
-            "Preset 1": {"calib_radius": 10, "detection_threshold": 0.2, "min_area_orig": 1000, "dedup_dist_orig": 50,
-                         "kernel_size_open": 3, "kernel_size_close": 3, "circle_radius": 5},
-            "Preset 2": {"calib_radius": 15, "detection_threshold": 0.3, "min_area_orig": 500, "dedup_dist_orig": 30,
-                         "kernel_size_open": 5, "kernel_size_close": 5, "circle_radius": 6},
-            "Preset 3": {"calib_radius": 8, "detection_threshold": 0.1, "min_area_orig": 2000, "dedup_dist_orig": 80,
-                         "kernel_size_open": 2, "kernel_size_close": 2, "circle_radius": 4},
-            "Preset 4": {"calib_radius": 20, "detection_threshold": 0.5, "min_area_orig": 1500, "dedup_dist_orig": 40,
-                         "kernel_size_open": 7, "kernel_size_close": 7, "circle_radius": 8},
-        }
 
 st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
 st.title("🧬 Iterative Kern-Zählung — V.2")
@@ -219,60 +199,38 @@ if uploaded_file.name != st.session_state.last_file:
 
 col1, col2 = st.columns([2, 1])
 with col2:
-    # -------------------- Sidebar: Parameter --------------------
-    calib_radius = st.sidebar.slider("Kalibrier-Radius (px, Originalbild)", 1, 30, 10, key="calib_radius")
-    detection_threshold = st.sidebar.slider("Threshold (0-1)", 0.01, 0.9, 0.2, 0.01, key="detection_threshold")
-    min_area_orig = st.sidebar.number_input("Minimale Konturfläche (px, Originalbild)", min_value=1, max_value=10000, value=1000, step=1, key="min_area_orig")
-    dedup_dist_orig = st.sidebar.number_input("Dedup-Distanz (px, Originalbild)", min_value=1, max_value=1000, value=50, step=1, key="dedup_dist_orig")
-    kernel_size_open = st.sidebar.slider("Kernelgröße für Öffnen", 1, 15, 1, 1, key="kernel_size_open")
-    kernel_size_close = st.sidebar.slider("Kernelgröße für Schließen", 1, 15, 1, 1, key="kernel_size_close")
-    circle_radius = st.sidebar.slider("Marker-Radius (px, Display)", 1, 12, 5, key="circle_radius")
+    st.sidebar.markdown("### Parameter")
+    calib_radius = st.sidebar.slider("Kalibrier-Radius (px, Originalbild)", 1, 30, 10)
+    detection_threshold = st.sidebar.slider(
+        "Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)",
+        0.01, 0.9, 0.2, 0.01
+    )
+    min_area_orig = st.sidebar.number_input(
+        "Minimale Konturfläche (px, Originalbild)",
+        min_value=1, max_value=10000, value=1000, step=1
+    )
+    dedup_dist_orig = st.sidebar.number_input(
+        "Dedup-Distanz (px, Originalbild)",
+        min_value=1, max_value=1000, value=50, step=1
+    )
 
-# -------------------- Preset-Manager --------------------
-preset_choice = st.sidebar.selectbox("Preset wählen", list(st.session_state.presets.keys()))
-params = st.session_state.presets[preset_choice]
-st.sidebar.write(f"Aktives Preset: {preset_choice}")
+    # 👉 Neue Morphologie-Parameter
+    kernel_size_open = st.sidebar.slider("Kernelgröße für Öffnen", 1, 15, 1, 1)
+    kernel_size_close = st.sidebar.slider("Kernelgröße für Schließen", 1, 15, 1, 1)
 
-# Preset laden (überschreibt die Slider-Werte sichtbar)
-if st.sidebar.button("Preset laden"):
-    for k, v in params.items():
-        st.session_state[k] = v
+    
+    circle_radius = st.sidebar.slider("Marker-Radius (px, Display)", 1, 12, 5)
+    st.sidebar.markdown("### Startvektoren (optional, RGB)")
+    hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
+    aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
 
-# Neues Preset speichern / überschreiben
-new_name = st.sidebar.text_input("Preset speichern unter Namen", value=preset_choice)
-if st.sidebar.button("Preset speichern"):
-    st.session_state.presets[new_name] = {
-        "calib_radius": st.session_state.calib_radius,
-        "detection_threshold": st.session_state.detection_threshold,
-        "min_area_orig": st.session_state.min_area_orig,
-        "dedup_dist_orig": st.session_state.dedup_dist_orig,
-        "kernel_size_open": st.session_state.kernel_size_open,
-        "kernel_size_close": st.session_state.kernel_size_close,
-        "circle_radius": st.session_state.circle_radius,
-    }
-    with open(PRESET_FILE, "w") as f:
-        json.dump(st.session_state.presets, f, indent=4)
-    st.sidebar.success(f"Preset '{new_name}' gespeichert!")
-
-# Preset löschen
-if st.sidebar.button("Preset löschen"):
-    if preset_choice in st.session_state.presets:
-        del st.session_state.presets[preset_choice]
-        with open(PRESET_FILE, "w") as f:
-            json.dump(st.session_state.presets, f, indent=4)
-        st.sidebar.success(f"Preset '{preset_choice}' gelöscht!")
-
-# -------------------- Startvektoren (immer verfügbar) --------------------
-st.sidebar.markdown("### Startvektoren (optional, RGB)")
-hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29", key="hema_default")
-aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78", key="aec_default")
-
-try:
-    hema_vec0 = np.array([float(x.strip()) for x in st.session_state.hema_default.split(",")], dtype=float)
-    aec_vec0 = np.array([float(x.strip()) for x in st.session_state.aec_default.split(",")], dtype=float)
-except Exception:
-    hema_vec0 = np.array([0.65, 0.70, 0.29], dtype=float)
-    aec_vec0 = np.array([0.27, 0.57, 0.78], dtype=float)
+    # parse start vectors safely
+    try:
+        hema_vec0 = np.array([float(x.strip()) for x in hema_default.split(",")], dtype=float)
+        aec_vec0 = np.array([float(x.strip()) for x in aec_default.split(",")], dtype=float)
+    except Exception:
+        hema_vec0 = np.array([0.65, 0.70, 0.29], dtype=float)
+        aec_vec0 = np.array([0.27, 0.57, 0.78], dtype=float)
 
 with col1:
     DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
