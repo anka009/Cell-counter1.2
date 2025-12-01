@@ -5,6 +5,26 @@ import cv2
 from PIL import Image
 from streamlit_image_coordinates import streamlit_image_coordinates
 import pandas as pd
+import json
+import os
+
+PRESET_FILE = "presets.json"
+
+if "presets" not in st.session_state:
+    if os.path.exists(PRESET_FILE):
+        with open(PRESET_FILE, "r") as f:
+            st.session_state.presets = json.load(f)
+    else:
+        st.session_state.presets = {
+            "Preset 1": {"calib_radius": 10, "detection_threshold": 0.2, "min_area_orig": 1000, "dedup_dist_orig": 50,
+                         "kernel_size_open": 3, "kernel_size_close": 3, "circle_radius": 5},
+            "Preset 2": {"calib_radius": 15, "detection_threshold": 0.3, "min_area_orig": 500, "dedup_dist_orig": 30,
+                         "kernel_size_open": 5, "kernel_size_close": 5, "circle_radius": 6},
+            "Preset 3": {"calib_radius": 8, "detection_threshold": 0.1, "min_area_orig": 2000, "dedup_dist_orig": 80,
+                         "kernel_size_open": 2, "kernel_size_close": 2, "circle_radius": 4},
+            "Preset 4": {"calib_radius": 20, "detection_threshold": 0.5, "min_area_orig": 1500, "dedup_dist_orig": 40,
+                         "kernel_size_open": 7, "kernel_size_close": 7, "circle_radius": 8},
+        }
 
 st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
 st.title("🧬 Iterative Kern-Zählung — V.2")
@@ -220,6 +240,44 @@ with col2:
 
     
     circle_radius = st.sidebar.slider("Marker-Radius (px, Display)", 1, 12, 5)
+    preset_choice = st.sidebar.selectbox("Preset wählen", list(st.session_state.presets.keys()))
+params = st.session_state.presets[preset_choice]
+st.sidebar.write(f"Aktives Preset: {preset_choice}")
+
+# Preset laden (überschreibt die aktuellen Werte)
+if st.sidebar.button("Preset laden"):
+    calib_radius = params["calib_radius"]
+    detection_threshold = params["detection_threshold"]
+    min_area_orig = params["min_area_orig"]
+    dedup_dist_orig = params["dedup_dist_orig"]
+    kernel_size_open = params["kernel_size_open"]
+    kernel_size_close = params["kernel_size_close"]
+    circle_radius = params["circle_radius"]
+
+# Neues Preset speichern / überschreiben
+new_name = st.sidebar.text_input("Preset speichern unter Namen", value=preset_choice)
+if st.sidebar.button("Preset speichern"):
+    st.session_state.presets[new_name] = {
+        "calib_radius": calib_radius,
+        "detection_threshold": detection_threshold,
+        "min_area_orig": min_area_orig,
+        "dedup_dist_orig": dedup_dist_orig,
+        "kernel_size_open": kernel_size_open,
+        "kernel_size_close": kernel_size_close,
+        "circle_radius": circle_radius,
+    }
+    with open(PRESET_FILE, "w") as f:
+        json.dump(st.session_state.presets, f, indent=4)
+    st.sidebar.success(f"Preset '{new_name}' gespeichert!")
+
+# Preset löschen
+if st.sidebar.button("Preset löschen"):
+    if preset_choice in st.session_state.presets:
+        del st.session_state.presets[preset_choice]
+        with open(PRESET_FILE, "w") as f:
+            json.dump(st.session_state.presets, f, indent=4)
+        st.sidebar.success(f"Preset '{preset_choice}' gelöscht!")
+
     st.sidebar.markdown("### Startvektoren (optional, RGB)")
     hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
     aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
