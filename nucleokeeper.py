@@ -178,7 +178,7 @@ for k in ["groups", "all_points", "last_file", "disp_width", "C_cache", "last_M_
         if k in ["groups", "all_points", "history"]:
             st.session_state[k] = []
         elif k == "disp_width":
-            st.session_state[k] = 1000
+            st.session_state[k] = 1200
         else:
             st.session_state[k] = None
 
