@@ -8,6 +8,12 @@ import pandas as pd
 import json
 import os
 
+st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
+st.markdown(
+    "<h3 style='color:darkred; font-size:22px;'>🧬 Iterative Kern-Zählung — V.2</h3>",
+    unsafe_allow_html=True
+)
+
 # Datei für die Parametersets
 PARAM_FILE = "params.json"
 
@@ -56,11 +62,6 @@ if st.button(f"Parameterset '{choice}' löschen"):
             json.dump(parameter_sets, f)
         st.warning(f"Parameterset '{choice}' wurde gelöscht. Bitte Seite neu laden.")
 
-st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
-st.markdown(
-    "<h3 style='color:darkred; font-size:22px;'>🧬 Iterative Kern-Zählung — V.2</h3>",
-    unsafe_allow_html=True
-)
 
 # -------------------- Hilfsfunktionen --------------------
 def draw_scale_bar(img_disp, scale, length_orig=200, bar_height=10, margin=20, color=(0,0,0)):
