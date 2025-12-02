@@ -302,7 +302,9 @@ if st.sidebar.button("Speichern", key="save_button"):
 
 # Aktuelles Set löschen
 if st.sidebar.button(f"Parameterset '{choice}' löschen", key="delete_button"):
-    if choice in parameter_sets:
+    if choice == "default":
+        st.sidebar.error("Das 'default'-Set kann nicht gelöscht werden.")
+    elif choice in parameter_sets:
         del parameter_sets[choice]
         with open(PARAM_FILE, "w") as f:
             json.dump(parameter_sets, f)
