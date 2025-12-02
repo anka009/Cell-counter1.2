@@ -5,6 +5,56 @@ import cv2
 from PIL import Image
 from streamlit_image_coordinates import streamlit_image_coordinates
 import pandas as pd
+import json
+import os
+
+# Datei für die Parametersets
+PARAM_FILE = "params.json"
+
+# Standardwerte, falls Datei noch nicht existiert
+default_sets = {
+    "default": {"disp_width": 1000, "threshold": 0.5},
+    "large": {"disp_width": 1200, "threshold": 0.7},
+    "small": {"disp_width": 800, "threshold": 0.3}
+}
+
+# Laden oder neu anlegen
+if os.path.exists(PARAM_FILE):
+    with open(PARAM_FILE, "r") as f:
+        parameter_sets = json.load(f)
+else:
+    parameter_sets = default_sets
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+
+# Auswahlbox für Parameterset
+choice = st.selectbox("Wähle Parameterset", list(parameter_sets.keys()))
+params = parameter_sets[choice]
+
+st.write("Aktuelles Set:", params)
+
+# Slider für Werte
+disp_width = st.slider("Anzeige-Breite (px)", 300, 1600, params["disp_width"])
+threshold = st.slider("Schwellwert", 0.0, 1.0, params["threshold"])
+
+# Neues Set speichern
+new_name = st.text_input("Neuer Name für Parameterset")
+if st.button("Speichern"):
+    parameter_sets[new_name] = {
+        "disp_width": disp_width,
+        "threshold": threshold
+    }
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+    st.success(f"Parameterset '{new_name}' gespeichert!")
+
+# Aktuelles Set löschen
+if st.button(f"Parameterset '{choice}' löschen"):
+    if choice in parameter_sets:
+        del parameter_sets[choice]
+        with open(PARAM_FILE, "w") as f:
+            json.dump(parameter_sets, f)
+        st.warning(f"Parameterset '{choice}' wurde gelöscht. Bitte Seite neu laden.")
 
 st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
 st.markdown(
