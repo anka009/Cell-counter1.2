@@ -7,6 +7,10 @@ from streamlit_image_coordinates import streamlit_image_coordinates
 import pandas as pd
 
 st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
+st.markdown(
+    "<h3 style='color:darkred; font-size:22px;'>🧬 Iterative Kern-Zählung — V.2</h3>",
+    unsafe_allow_html=True
+)
 st.title("🧬 Iterative Kern-Zählung — V.2")
 
 # -------------------- Hilfsfunktionen --------------------
