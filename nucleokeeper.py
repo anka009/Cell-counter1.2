@@ -239,6 +239,76 @@ with col1:
     DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
     st.session_state.disp_width = DISPLAY_WIDTH
 
+import json, os
+
+PARAM_FILE = "params.json"
+
+# Standardwerte ("Fabrikzustand")
+default_sets = {
+    "default": {
+        "kalibrier_radius": 10,
+        "min_konturflaeche": 1000,
+        "dedup_distanz": 50,
+        "kernel_size_open": 3,
+        "kernel_size_close": 3,
+        "marker_radius": 5
+    },
+    "experiment1": {
+        "kalibrier_radius": 20,
+        "min_konturflaeche": 500,
+        "dedup_distanz": 30,
+        "kernel_size_open": 5,
+        "kernel_size_close": 5,
+        "marker_radius": 8
+    }
+}
+
+# Laden oder neu anlegen
+if os.path.exists(PARAM_FILE):
+    with open(PARAM_FILE, "r") as f:
+        parameter_sets = json.load(f)
+else:
+    parameter_sets = default_sets
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+
+# Sidebar: Auswahl des Sets
+st.sidebar.markdown("### Parametersets")
+choice = st.sidebar.radio("Wähle Parameterset", list(parameter_sets.keys()),
+                          index=list(parameter_sets.keys()).index("default"))
+params = parameter_sets[choice]
+
+# Slider mit Set-Werten vorbelegt
+calib_radius     = st.sidebar.slider("Kalibrier-Radius", 1, 30, params["kalibrier_radius"])
+min_area_orig    = st.sidebar.number_input("Minimale Konturfläche", 1, 10000, params["min_konturflaeche"])
+dedup_dist_orig  = st.sidebar.number_input("Dedup-Distanz", 1, 1000, params["dedup_distanz"])
+kernel_size_open = st.sidebar.slider("Kernelgröße Öffnen", 1, 15, params["kernel_size_open"])
+kernel_size_close= st.sidebar.slider("Kernelgröße Schließen", 1, 15, params["kernel_size_close"])
+circle_radius    = st.sidebar.slider("Marker-Radius", 1, 12, params["marker_radius"])
+
+# Neues Set speichern
+new_name = st.sidebar.text_input("Neuer Name für Parameterset")
+if st.sidebar.button("Speichern"):
+    parameter_sets[new_name] = {
+        "kalibrier_radius": calib_radius,
+        "min_konturflaeche": min_area_orig,
+        "dedup_distanz": dedup_dist_orig,
+        "kernel_size_open": kernel_size_open,
+        "kernel_size_close": kernel_size_close,
+        "marker_radius": circle_radius
+    }
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+    st.sidebar.success(f"Parameterset '{new_name}' gespeichert!")
+
+# Aktuelles Set löschen
+if st.sidebar.button(f"Parameterset '{choice}' löschen"):
+    if choice in parameter_sets:
+        del parameter_sets[choice]
+        with open(PARAM_FILE, "w") as f:
+            json.dump(parameter_sets, f)
+        st.sidebar.warning(f"Parameterset '{choice}' gelöscht. Bitte Seite neu laden.")
+
 # -------------------- Prepare images (original vs display) --------------------
 image_orig = np.array(Image.open(uploaded_file).convert("RGB"))
 H_orig, W_orig = image_orig.shape[:2]
