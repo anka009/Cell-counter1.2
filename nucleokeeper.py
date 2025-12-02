@@ -5,8 +5,6 @@ import cv2
 from PIL import Image
 from streamlit_image_coordinates import streamlit_image_coordinates
 import pandas as pd
-import json
-import os
 
 st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
 st.markdown(
