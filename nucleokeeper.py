@@ -203,26 +203,21 @@ if uploaded_file.name != st.session_state.last_file:
 col1, col2 = st.columns([2, 1])
 with col2:
     st.sidebar.markdown("### Parameter")
-    calib_radius = st.sidebar.slider("Kalibrier-Radius (px, Originalbild)", 1, 30, 10)
+    calib_radius = kalibrier_radius
     detection_threshold = st.sidebar.slider(
         "Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)",
         0.01, 0.9, 0.2, 0.01
     )
-    min_area_orig = st.sidebar.number_input(
-        "Minimale Konturfläche (px, Originalbild)",
-        min_value=1, max_value=10000, value=1000, step=1
-    )
-    dedup_dist_orig = st.sidebar.number_input(
-        "Dedup-Distanz (px, Originalbild)",
-        min_value=1, max_value=1000, value=50, step=1
-    )
+    min_area_orig = min_konturflaeche
+    
+    dedup_dist_orig = dedup_distanz
 
     # 👉 Neue Morphologie-Parameter
-    kernel_size_open = st.sidebar.slider("Kernelgröße für Öffnen", 1, 15, 1, 1)
-    kernel_size_close = st.sidebar.slider("Kernelgröße für Schließen", 1, 15, 1, 1)
+    kernel_size_open = kernel_size_open
+    kernel_size_close = kernel_size_close
 
+    circle_radius = marker_radius
     
-    circle_radius = st.sidebar.slider("Marker-Radius (px, Display)", 1, 12, 5)
     st.sidebar.markdown("### Startvektoren (optional, RGB)")
     hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
     aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
@@ -454,3 +449,74 @@ st.markdown("---")
 st.caption("Hinweise: Deconvolution wird auf dem ORIGINALbild ausgeführt. "
            "CLAHE sollte nicht vor der Deconvolution angewendet werden. "
            "Min. Konturfläche & Dedup-Distanz werden intern auf Originalkoordinaten umgerechnet.")
+
+import json, os
+
+PARAM_FILE = "params.json"
+
+# Standardwerte für deine Parameter
+default_sets = {
+    "default": {
+        "kalibrier_radius": 10,
+        "min_konturflaeche": 1000,
+        "dedup_distanz": 50,
+        "kernel_size_open": 3,
+        "kernel_size_close": 3,
+        "marker_radius": 5
+    },
+    "experiment1": {
+        "kalibrier_radius": 20,
+        "min_konturflaeche": 500,
+        "dedup_distanz": 30,
+        "kernel_size_open": 5,
+        "kernel_size_close": 5,
+        "marker_radius": 8
+    }
+}
+
+# Laden oder neu anlegen
+if os.path.exists(PARAM_FILE):
+    with open(PARAM_FILE, "r") as f:
+        parameter_sets = json.load(f)
+else:
+    parameter_sets = default_sets
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+
+# Radiobuttons unten – Startset ist immer "default"
+choice = st.radio("Wähle Parameterset", list(parameter_sets.keys()), 
+                  index=list(parameter_sets.keys()).index("default"))
+params = parameter_sets[choice]
+
+st.write("Aktuelles Set:", params)
+
+# Slider für Werte (werden mit Set-Werten vorbelegt)
+kalibrier_radius = st.slider("Kalibrier-Radius", 1, 30, params["kalibrier_radius"])
+min_konturflaeche = st.slider("Minimale Konturfläche", 1, 10000, params["min_konturflaeche"])
+dedup_distanz = st.slider("Dedup-Distanz", 1, 1000, params["dedup_distanz"])
+kernel_size_open = st.slider("Kernelgröße für Öffnen", 1, 15, params["kernel_size_open"])
+kernel_size_close = st.slider("Kernelgröße für Schließen", 1, 15, params["kernel_size_close"])
+marker_radius = st.slider("Marker-Radius", 1, 12, params["marker_radius"])
+
+# Neues Set speichern
+new_name = st.text_input("Neuer Name für Parameterset")
+if st.button("Speichern"):
+    parameter_sets[new_name] = {
+        "kalibrier_radius": kalibrier_radius,
+        "min_konturflaeche": min_konturflaeche,
+        "dedup_distanz": dedup_distanz,
+        "kernel_size_open": kernel_size_open,
+        "kernel_size_close": kernel_size_close,
+        "marker_radius": marker_radius
+    }
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+    st.success(f"Parameterset '{new_name}' gespeichert!")
+
+# Aktuelles Set löschen
+if st.button(f"Parameterset '{choice}' löschen"):
+    if choice in parameter_sets:
+        del parameter_sets[choice]
+        with open(PARAM_FILE, "w") as f:
+            json.dump(parameter_sets, f)
+        st.warning(f"Parameterset '{choice}' gelöscht. Bitte Seite neu laden.")
