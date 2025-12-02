@@ -233,7 +233,7 @@ with col2:
         aec_vec0 = np.array([0.27, 0.57, 0.78], dtype=float)
 
 with col1:
-    DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
+    DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 500, 2000, st.session_state.disp_width)
     st.session_state.disp_width = DISPLAY_WIDTH
 
 # -------------------- Prepare images (original vs display) --------------------
