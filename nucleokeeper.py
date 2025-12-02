@@ -300,15 +300,22 @@ if st.sidebar.button("Speichern", key="save_button"):
         json.dump(parameter_sets, f)
     st.sidebar.success(f"Parameterset '{new_name}' gespeichert!")
 
-# Aktuelles Set löschen
+# Zwei-Stufen-Löschung mit Schutz für 'default'
+if "confirm_delete" not in st.session_state:
+    st.session_state.confirm_delete = False
+
 if st.sidebar.button(f"Parameterset '{choice}' löschen", key="delete_button"):
     if choice == "default":
         st.sidebar.error("Das 'default'-Set kann nicht gelöscht werden.")
-    elif choice in parameter_sets:
+    elif not st.session_state.confirm_delete:
+        st.session_state.confirm_delete = True
+        st.sidebar.warning("Sind Sie sicher? Bitte klicken Sie erneut, um zu löschen.")
+    else:
         del parameter_sets[choice]
         with open(PARAM_FILE, "w") as f:
             json.dump(parameter_sets, f)
-        st.sidebar.warning(f"Parameterset '{choice}' gelöscht. Bitte Seite neu laden.")
+        st.sidebar.success(f"Parameterset '{choice}' wurde gelöscht.")
+        st.session_state.confirm_delete = False
 
 # -------------------- Prepare images (original vs display) --------------------
 image_orig = np.array(Image.open(uploaded_file).convert("RGB"))
