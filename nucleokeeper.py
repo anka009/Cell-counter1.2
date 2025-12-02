@@ -450,11 +450,12 @@ st.caption("Hinweise: Deconvolution wird auf dem ORIGINALbild ausgeführt. "
            "CLAHE sollte nicht vor der Deconvolution angewendet werden. "
            "Min. Konturfläche & Dedup-Distanz werden intern auf Originalkoordinaten umgerechnet.")
 
+# -------------------- Parametersets unten --------------------
 import json, os
 
 PARAM_FILE = "params.json"
 
-# Standardwerte für deine Parameter
+# Standardwerte ("Fabrikzustand")
 default_sets = {
     "default": {
         "kalibrier_radius": 10,
@@ -484,19 +485,26 @@ else:
         json.dump(parameter_sets, f)
 
 # Radiobuttons unten – Startset ist immer "default"
-choice = st.radio("Wähle Parameterset", list(parameter_sets.keys()), 
+choice = st.radio("Wähle Parameterset", list(parameter_sets.keys()),
                   index=list(parameter_sets.keys()).index("default"))
 params = parameter_sets[choice]
 
 st.write("Aktuelles Set:", params)
 
-# Slider für Werte (werden mit Set-Werten vorbelegt)
+# Slider für Werte (mit Set-Werten vorbelegt)
 kalibrier_radius = st.slider("Kalibrier-Radius", 1, 30, params["kalibrier_radius"])
 min_konturflaeche = st.slider("Minimale Konturfläche", 1, 10000, params["min_konturflaeche"])
 dedup_distanz = st.slider("Dedup-Distanz", 1, 1000, params["dedup_distanz"])
 kernel_size_open = st.slider("Kernelgröße für Öffnen", 1, 15, params["kernel_size_open"])
 kernel_size_close = st.slider("Kernelgröße für Schließen", 1, 15, params["kernel_size_close"])
 marker_radius = st.slider("Marker-Radius", 1, 12, params["marker_radius"])
+
+# Übergabe an deine Variablen für die Funktionen
+calib_radius = kalibrier_radius
+min_area_orig = min_konturflaeche
+dedup_dist_orig = dedup_distanz
+circle_radius = marker_radius
+# kernel_size_open und kernel_size_close kannst du direkt weiterverwenden
 
 # Neues Set speichern
 new_name = st.text_input("Neuer Name für Parameterset")
