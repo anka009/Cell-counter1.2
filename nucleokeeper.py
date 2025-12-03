@@ -212,6 +212,67 @@ with col2:
     st.sidebar.markdown("### Startvektoren (optional, RGB)")
     hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
     aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
+    st.sidebar.markdown("### Nebenfunktion: Vektorvorschlag (Kreis)")
+
+def extract_patch_circle(image, x, y, radius):
+    # quadratisches Patch holen
+    patch = extract_patch(image, x, y, radius)
+    if patch is None:
+        return None, None
+    
+    h, w, _ = patch.shape
+    cy, cx = h // 2, w // 2
+    
+    # Kreis-Maske erstellen
+    Y, X = np.ogrid[:h, :w]
+    dist = np.sqrt((X - cx)**2 + (Y - cy)**2)
+    mask = dist <= radius
+    
+    return patch, mask
+
+def berechne_patch_vektor_circle(image, x, y, radius):
+    patch, mask = extract_patch_circle(image, x, y, radius)
+    if patch is None or mask is None:
+        return None
+    
+    # OD-Werte berechnen
+    OD = -np.log(np.clip((patch.astype(np.float32)+1e-6)/255.0, 1e-8, 1.0))
+    OD = OD[mask]  # nur Pixel im Kreis
+    
+    if OD.size == 0:
+        return None
+    
+    vec = np.median(OD, axis=0)
+    return vec / (np.linalg.norm(vec) + 1e-12)
+
+# Button zum Prüfen
+if st.sidebar.button("Vektor prüfen"):
+    if "last_click" in st.session_state:
+        x_orig, y_orig = st.session_state.last_click
+        vec = berechne_patch_vektor_circle(image_orig, x_orig, y_orig, calib_radius)
+
+        if vec is not None:
+            st.sidebar.write("**Gemessener Farbvektor (Kreis):**")
+            st.sidebar.write(f"{vec[0]:.3f}, {vec[1]:.3f}, {vec[2]:.3f}")
+
+            # Halbtransparente Visualisierung des Kreises im Bild
+            img_disp_copy = image_disp.copy()
+            overlay = img_disp_copy.copy()
+            x_disp = int(round(x_orig * scale))
+            y_disp = int(round(y_orig * scale))
+            cv2.circle(overlay, (x_disp, y_disp), int(calib_radius*scale), (0,0,255), -1)  # roter Kreis gefüllt
+            alpha = 0.3  # Transparenz
+            img_disp_copy = cv2.addWeighted(overlay, alpha, img_disp_copy, 1 - alpha, 0)
+
+            # Kreisrand zusätzlich einzeichnen
+            cv2.circle(img_disp_copy, (x_disp, y_disp), int(calib_radius*scale), (0,0,255), 2)
+
+            st.image(img_disp_copy, caption="Kreis für Vektorvorschlag", use_column_width=True)
+
+        else:
+            st.sidebar.info("Kein gültiger Vektor aus dem Kreis berechnet.")
+    else:
+        st.sidebar.info("Bitte zuerst ins Bild klicken, um ein Objekt auszuwählen.")
 
     # parse start vectors safely
     try:
