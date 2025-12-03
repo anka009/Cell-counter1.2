@@ -225,124 +225,97 @@ with col1:
     DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
     st.session_state.disp_width = DISPLAY_WIDTH
 
-import sqlite3
+import json, os
 
-# --- SQLite Hilfsfunktionen ---
-def get_connection():
-    return sqlite3.connect("parameter_sets.db")
+PARAM_FILE = "params.json"
 
-def init_db():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS parameter_sets (
-        name TEXT PRIMARY KEY,
-        kalibrier_radius INTEGER,
-        min_konturflaeche INTEGER,
-        dedup_distanz INTEGER,
-        kernel_size_open INTEGER,
-        kernel_size_close INTEGER,
-        marker_radius INTEGER
-    )
-    """)
-    conn.commit()
-    conn.close()
+# Standardwerte ("Fabrikzustand")
+default_sets = {
+    "default": {
+        "kalibrier_radius": 10,
+        "min_konturflaeche": 1000,
+        "dedup_distanz": 50,
+        "kernel_size_open": 3,
+        "kernel_size_close": 3,
+        "marker_radius": 5
+    },
+    "Set 1": {
+        "kalibrier_radius": 5,
+        "min_konturflaeche": 2000,
+        "dedup_distanz": 75,
+        "kernel_size_open": 2,
+        "kernel_size_close": 2,
+        "marker_radius": 4
+    }
+}
 
-def save_set(name, params):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-    INSERT OR REPLACE INTO parameter_sets VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        name,
-        params["kalibrier_radius"],
-        params["min_konturflaeche"],
-        params["dedup_distanz"],
-        params["kernel_size_open"],
-        params["kernel_size_close"],
-        params["marker_radius"]
-    ))
-    conn.commit()
-    conn.close()
-
-def load_sets():
-    conn = get_connection()
-    df = pd.read_sql_query("SELECT * FROM parameter_sets", conn)
-    conn.close()
-    sets = {}
-    for _, row in df.iterrows():
-        sets[row["name"]] = {
-            "kalibrier_radius": row["kalibrier_radius"],
-            "min_konturflaeche": row["min_konturflaeche"],
-            "dedup_distanz": row["dedup_distanz"],
-            "kernel_size_open": row["kernel_size_open"],
-            "kernel_size_close": row["kernel_size_close"],
-            "marker_radius": row["marker_radius"]
-        }
-    return sets
-
-# --- Initialisierung ---
-init_db()
-
-# --- Parameter-Sets aus SQLite laden ---
-parameter_sets = load_sets()
-
-if parameter_sets:
-    # Auswahl des Sets
-    choice = st.sidebar.selectbox("Wähle Parameterset", list(parameter_sets.keys()))
-    params = parameter_sets[choice]
-
-    # Werte übernehmen
-    calib_radius = params["kalibrier_radius"]
-    min_area_orig = params["min_konturflaeche"]
-    dedup_dist_orig = params["dedup_distanz"]
-    kernel_size_open = params["kernel_size_open"]
-    kernel_size_close = params["kernel_size_close"]
-    circle_radius = params["marker_radius"]
-
-    # --- Feintuning-Slider ---
-    with st.sidebar.expander("Feintuning (optional)"):
-        calib_radius = st.slider("Kalibrier-Radius", 1, 30, calib_radius)
-        min_area_orig = st.number_input("Minimale Konturfläche", 1, 10000, min_area_orig)
-        dedup_dist_orig = st.number_input("Dedup-Distanz", 1, 1000, dedup_dist_orig)
-        kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open)
-        kernel_size_close = st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close)
-        circle_radius = st.slider("Marker-Radius", 1, 12, circle_radius)
-
-    # --- Neues Set speichern ---
-    new_name = st.sidebar.text_input("Neuer Name für Parameterset")
-    if st.sidebar.button("Speichern"):
-        save_set(new_name, {
-            "kalibrier_radius": calib_radius,
-            "min_konturflaeche": min_area_orig,
-            "dedup_distanz": dedup_dist_orig,
-            "kernel_size_open": kernel_size_open,
-            "kernel_size_close": kernel_size_close,
-            "marker_radius": circle_radius
-        })
-        st.sidebar.success(f"Parameterset '{new_name}' gespeichert!")
-
-    # --- Set löschen ---
-    if "confirm_delete" not in st.session_state:
-        st.session_state.confirm_delete = False
-
-    if st.sidebar.button(f"Parameterset '{choice}' löschen", key="delete_button"):
-        if choice == "default":
-            st.sidebar.error("Das 'default'-Set kann nicht gelöscht werden.")
-        elif not st.session_state.confirm_delete:
-            st.session_state.confirm_delete = True
-            st.sidebar.warning("Sind Sie sicher? Bitte klicken Sie erneut, um zu löschen.")
-        else:
-            conn = get_connection()
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM parameter_sets WHERE name=?", (choice,))
-            conn.commit()
-            conn.close()
-            st.sidebar.success(f"Parameterset '{choice}' wurde gelöscht.")
-            st.session_state.confirm_delete = False
-
+# Laden oder neu anlegen
+if os.path.exists(PARAM_FILE):
+    with open(PARAM_FILE, "r") as f:
+        parameter_sets = json.load(f)
 else:
-    st.sidebar.info("Noch keine Sets vorhanden. Bitte ein neues Set speichern.")
+    parameter_sets = default_sets
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+
+# Sidebar: Auswahl des Sets
+st.sidebar.markdown("### Parametersets")
+choice = st.sidebar.radio(
+    "Wähle Parameterset",
+    list(parameter_sets.keys()),
+    index=list(parameter_sets.keys()).index("default"),
+    key="paramset_sidebar"
+)
+params = parameter_sets[choice]
+
+# Werte aus dem Set übernehmen
+calib_radius     = params["kalibrier_radius"]
+min_area_orig    = params["min_konturflaeche"]
+dedup_dist_orig  = params["dedup_distanz"]
+kernel_size_open = params["kernel_size_open"]
+kernel_size_close= params["kernel_size_close"]
+circle_radius    = params["marker_radius"]
+
+# Optionales Feintuning im Expander
+with st.sidebar.expander("Feintuning (optional)"):
+    calib_radius     = st.slider("Kalibrier-Radius", 1, 30, calib_radius, key="calib_slider")
+    min_area_orig    = st.number_input("Minimale Konturfläche", 1, 10000, min_area_orig, key="min_area_input")
+    dedup_dist_orig  = st.number_input("Dedup-Distanz", 1, 1000, dedup_dist_orig, key="dedup_input")
+    kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open, key="open_slider")
+    kernel_size_close= st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close, key="close_slider")
+    circle_radius    = st.slider("Marker-Radius", 1, 12, circle_radius, key="marker_slider")
+
+# Neues Set speichern
+new_name = st.sidebar.text_input("Neuer Name für Parameterset", key="new_set_name")
+if st.sidebar.button("Speichern", key="save_button"):
+    parameter_sets[new_name] = {
+        "kalibrier_radius": calib_radius,
+        "min_konturflaeche": min_area_orig,
+        "dedup_distanz": dedup_dist_orig,
+        "kernel_size_open": kernel_size_open,
+        "kernel_size_close": kernel_size_close,
+        "marker_radius": circle_radius
+    }
+    with open(PARAM_FILE, "w") as f:
+        json.dump(parameter_sets, f)
+    st.sidebar.success(f"Parameterset '{new_name}' gespeichert!")
+
+# Zwei-Stufen-Löschung mit Schutz für 'default'
+if "confirm_delete" not in st.session_state:
+    st.session_state.confirm_delete = False
+
+if st.sidebar.button(f"Parameterset '{choice}' löschen", key="delete_button"):
+    if choice == "default":
+        st.sidebar.error("Das 'default'-Set kann nicht gelöscht werden.")
+    elif not st.session_state.confirm_delete:
+        st.session_state.confirm_delete = True
+        st.sidebar.warning("Sind Sie sicher? Bitte klicken Sie erneut, um zu löschen.")
+    else:
+        del parameter_sets[choice]
+        with open(PARAM_FILE, "w") as f:
+            json.dump(parameter_sets, f)
+        st.sidebar.success(f"Parameterset '{choice}' wurde gelöscht.")
+        st.session_state.confirm_delete = False
 
 # -------------------- Prepare images (original vs display) --------------------
 image_orig = np.array(Image.open(uploaded_file).convert("RGB"))
@@ -559,4 +532,3 @@ st.markdown("---")
 st.caption("Hinweise: Deconvolution wird auf dem ORIGINALbild ausgeführt. "
            "CLAHE sollte nicht vor der Deconvolution angewendet werden. "
            "Min. Konturfläche & Dedup-Distanz werden intern auf Originalkoordinaten umgerechnet.")
-
