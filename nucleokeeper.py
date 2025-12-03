@@ -284,9 +284,11 @@ def load_sets():
 # --- Initialisierung ---
 init_db()
 
-# --- Sidebar: Auswahl & Feintuning ---
+# --- Parameter-Sets aus SQLite laden ---
 parameter_sets = load_sets()
+
 if parameter_sets:
+    # Auswahl des Sets
     choice = st.sidebar.selectbox("Wähle Parameterset", list(parameter_sets.keys()))
     params = parameter_sets[choice]
 
@@ -298,7 +300,7 @@ if parameter_sets:
     kernel_size_close = params["kernel_size_close"]
     circle_radius = params["marker_radius"]
 
-    # Feintuning
+    # --- Feintuning-Slider ---
     with st.sidebar.expander("Feintuning (optional)"):
         calib_radius = st.slider("Kalibrier-Radius", 1, 30, calib_radius)
         min_area_orig = st.number_input("Minimale Konturfläche", 1, 10000, min_area_orig)
@@ -307,7 +309,7 @@ if parameter_sets:
         kernel_size_close = st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close)
         circle_radius = st.slider("Marker-Radius", 1, 12, circle_radius)
 
-    # Neues Set speichern
+    # --- Neues Set speichern ---
     new_name = st.sidebar.text_input("Neuer Name für Parameterset")
     if st.sidebar.button("Speichern"):
         save_set(new_name, {
@@ -320,24 +322,27 @@ if parameter_sets:
         })
         st.sidebar.success(f"Parameterset '{new_name}' gespeichert!")
 
-# Set löschen (außer default)
-if "confirm_delete" not in st.session_state:
-    st.session_state.confirm_delete = False
-
-if st.sidebar.button(f"Parameterset '{choice}' löschen", key="delete_button"):
-    if choice == "default":
-        st.sidebar.error("Das 'default'-Set kann nicht gelöscht werden.")
-    elif not st.session_state.confirm_delete:
-        st.session_state.confirm_delete = True
-        st.sidebar.warning("Sind Sie sicher? Bitte klicken Sie erneut, um zu löschen.")
-    else:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM parameter_sets WHERE name=?", (choice,))
-        conn.commit()
-        conn.close()
-        st.sidebar.success(f"Parameterset '{choice}' wurde gelöscht.")
+    # --- Set löschen ---
+    if "confirm_delete" not in st.session_state:
         st.session_state.confirm_delete = False
+
+    if st.sidebar.button(f"Parameterset '{choice}' löschen", key="delete_button"):
+        if choice == "default":
+            st.sidebar.error("Das 'default'-Set kann nicht gelöscht werden.")
+        elif not st.session_state.confirm_delete:
+            st.session_state.confirm_delete = True
+            st.sidebar.warning("Sind Sie sicher? Bitte klicken Sie erneut, um zu löschen.")
+        else:
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM parameter_sets WHERE name=?", (choice,))
+            conn.commit()
+            conn.close()
+            st.sidebar.success(f"Parameterset '{choice}' wurde gelöscht.")
+            st.session_state.confirm_delete = False
+
+else:
+    st.sidebar.info("Noch keine Sets vorhanden. Bitte ein neues Set speichern.")
 
 # -------------------- Prepare images (original vs display) --------------------
 image_orig = np.array(Image.open(uploaded_file).convert("RGB"))
