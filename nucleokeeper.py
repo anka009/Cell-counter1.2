@@ -227,7 +227,11 @@ with col1:
 
 import sqlite3
 
-# --- Hilfsfunktionen für SQLite ---
+import sqlite3
+import pandas as pd
+import streamlit as st
+
+# --- SQLite Hilfsfunktionen ---
 def get_connection():
     return sqlite3.connect("parameter_sets.db")
 
@@ -267,83 +271,58 @@ def save_set(name, params):
 
 def load_sets():
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM parameter_sets")
-    rows = cursor.fetchall()
+    df = pd.read_sql_query("SELECT * FROM parameter_sets", conn)
     conn.close()
     sets = {}
-    for row in rows:
-        sets[row[0]] = {
-            "kalibrier_radius": row[1],
-            "min_konturflaeche": row[2],
-            "dedup_distanz": row[3],
-            "kernel_size_open": row[4],
-            "kernel_size_close": row[5],
-            "marker_radius": row[6]
+    for _, row in df.iterrows():
+        sets[row["name"]] = {
+            "kalibrier_radius": row["kalibrier_radius"],
+            "min_konturflaeche": row["min_konturflaeche"],
+            "dedup_distanz": row["dedup_distanz"],
+            "kernel_size_open": row["kernel_size_open"],
+            "kernel_size_close": row["kernel_size_close"],
+            "marker_radius": row["marker_radius"]
         }
     return sets
 
 # --- Initialisierung ---
 init_db()
 
-# Standardwerte beim ersten Start einfügen (falls leer)
-if not load_sets():
-    save_set("default", {
-        "kalibrier_radius": 10,
-        "min_konturflaeche": 1000,
-        "dedup_distanz": 50,
-        "kernel_size_open": 3,
-        "kernel_size_close": 3,
-        "marker_radius": 5
-    })
-    save_set("Set 1", {
-        "kalibrier_radius": 5,
-        "min_konturflaeche": 2000,
-        "dedup_distanz": 75,
-        "kernel_size_open": 2,
-        "kernel_size_close": 2,
-        "marker_radius": 4
-    })
-
-# --- Sidebar: Auswahl des Sets ---
+# --- Sidebar: Auswahl & Feintuning ---
 parameter_sets = load_sets()
-choice = st.sidebar.radio(
-    "Wähle Parameterset",
-    list(parameter_sets.keys()),
-    index=list(parameter_sets.keys()).index("default"),
-    key="paramset_sidebar"
-)
-params = parameter_sets[choice]
+if parameter_sets:
+    choice = st.sidebar.selectbox("Wähle Parameterset", list(parameter_sets.keys()))
+    params = parameter_sets[choice]
 
-# Werte aus dem Set übernehmen
-calib_radius = params["kalibrier_radius"]
-min_area_orig = params["min_konturflaeche"]
-dedup_dist_orig = params["dedup_distanz"]
-kernel_size_open = params["kernel_size_open"]
-kernel_size_close = params["kernel_size_close"]
-circle_radius = params["marker_radius"]
+    # Werte übernehmen
+    calib_radius = params["kalibrier_radius"]
+    min_area_orig = params["min_konturflaeche"]
+    dedup_dist_orig = params["dedup_distanz"]
+    kernel_size_open = params["kernel_size_open"]
+    kernel_size_close = params["kernel_size_close"]
+    circle_radius = params["marker_radius"]
 
-# --- Feintuning im Expander ---
-with st.sidebar.expander("Feintuning (optional)"):
-    calib_radius = st.slider("Kalibrier-Radius", 1, 30, calib_radius, key="calib_slider")
-    min_area_orig = st.number_input("Minimale Konturfläche", 1, 10000, min_area_orig, key="min_area_input")
-    dedup_dist_orig = st.number_input("Dedup-Distanz", 1, 1000, dedup_dist_orig, key="dedup_input")
-    kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open, key="open_slider")
-    kernel_size_close = st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close, key="close_slider")
-    circle_radius = st.slider("Marker-Radius", 1, 12, circle_radius, key="marker_slider")
+    # Feintuning
+    with st.sidebar.expander("Feintuning (optional)"):
+        calib_radius = st.slider("Kalibrier-Radius", 1, 30, calib_radius)
+        min_area_orig = st.number_input("Minimale Konturfläche", 1, 10000, min_area_orig)
+        dedup_dist_orig = st.number_input("Dedup-Distanz", 1, 1000, dedup_dist_orig)
+        kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open)
+        kernel_size_close = st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close)
+        circle_radius = st.slider("Marker-Radius", 1, 12, circle_radius)
 
-# Neues Set speichern
-new_name = st.sidebar.text_input("Neuer Name für Parameterset", key="new_set_name")
-if st.sidebar.button("Speichern", key="save_button"):
-    save_set(new_name, {
-        "kalibrier_radius": calib_radius,
-        "min_konturflaeche": min_area_orig,
-        "dedup_distanz": dedup_dist_orig,
-        "kernel_size_open": kernel_size_open,
-        "kernel_size_close": kernel_size_close,
-        "marker_radius": circle_radius
-    })
-    st.sidebar.success(f"Parameterset '{new_name}' gespeichert!")
+    # Neues Set speichern
+    new_name = st.sidebar.text_input("Neuer Name für Parameterset")
+    if st.sidebar.button("Speichern"):
+        save_set(new_name, {
+            "kalibrier_radius": calib_radius,
+            "min_konturflaeche": min_area_orig,
+            "dedup_distanz": dedup_dist_orig,
+            "kernel_size_open": kernel_size_open,
+            "kernel_size_close": kernel_size_close,
+            "marker_radius": circle_radius
+        })
+        st.sidebar.success(f"Parameterset '{new_name}' gespeichert!")
 
 # Set löschen (außer default)
 if "confirm_delete" not in st.session_state:
