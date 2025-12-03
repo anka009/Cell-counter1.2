@@ -212,41 +212,6 @@ with col2:
     st.sidebar.markdown("### Startvektoren (optional, RGB)")
     hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
     aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
-    st.sidebar.markdown("### Nebenfunktion: Farbvektor anzeigen")
-
-def berechne_patch_vektor(patch):
-    vec = median_od_vector_from_patch(patch)
-    if vec is None:
-        return None
-    return vec / (np.linalg.norm(vec) + 1e-12)
-
-def winkel_grad(a, b):
-    a = a / (np.linalg.norm(a)+1e-12)
-    b = b / (np.linalg.norm(b)+1e-12)
-    c = np.clip(np.dot(a, b), -1.0, 1.0)
-    return np.degrees(np.arccos(c))
-
-# Falls der Nutzer im Bild klickt
-if "last_click" in st.session_state:
-    x_orig, y_orig = st.session_state.last_click
-    patch = extract_patch(image_orig, x_orig, y_orig, calib_radius)
-    vec = berechne_patch_vektor(patch)
-
-    if vec is not None:
-        # Vergleich mit aktuellem Chromogen-Vektor
-        diff_angle_chrom = winkel_grad(vec, chrom_vec0)
-        diff_angle_hema = winkel_grad(vec, hema_vec0)
-
-        st.sidebar.write("**Gemessener Farbvektor:**")
-        st.sidebar.write(f"{vec[0]:.3f}, {vec[1]:.3f}, {vec[2]:.3f}")
-
-        st.sidebar.write(f"Abweichung zu Chromogen: {diff_angle_chrom:.1f}°")
-        st.sidebar.write(f"Abweichung zu Hämatoxylin: {diff_angle_hema:.1f}°")
-
-        if diff_angle_chrom > 20 or diff_angle_hema > 20:
-            st.sidebar.warning("Große Abweichung! Korrektur der Startvektoren könnte sinnvoll sein.")
-    else:
-        st.sidebar.info("Kein gültiger Vektor aus dem Patch berechnet.")
 
     # parse start vectors safely
     try:
