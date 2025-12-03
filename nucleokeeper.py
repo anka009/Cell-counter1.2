@@ -212,30 +212,6 @@ with col2:
     st.sidebar.markdown("### Startvektoren (optional, RGB)")
     hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
     aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
-    
-    # --- Nebenfunktion: Farbvektor prüfen ---
-    st.sidebar.markdown("### Nebenfunktion: Farbvektor prüfen")
-
-    def berechne_patch_vektor(patch):
-        vec = median_od_vector_from_patch(patch)
-        if vec is None:
-            return None
-        return vec / (np.linalg.norm(vec) + 1e-12)
-
-    # Button zum Prüfen
-    if st.sidebar.button("Vektor prüfen"):
-        if "last_click" in st.session_state:
-            x_orig, y_orig = st.session_state.last_click
-            patch = extract_patch(image_orig, x_orig, y_orig, calib_radius)
-            vec = berechne_patch_vektor(patch)
-
-            if vec is not None:
-                st.sidebar.write("**Gemessener Farbvektor:**")
-                st.sidebar.write(f"{vec[0]:.3f}, {vec[1]:.3f}, {vec[2]:.3f}")
-            else:
-                st.sidebar.info("Kein gültiger Vektor aus dem Patch berechnet.")
-        else:
-            st.sidebar.info("Bitte zuerst ins Bild klicken, um ein Objekt auszuwählen.")
 
     # parse start vectors safely
     try:
