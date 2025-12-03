@@ -227,10 +227,6 @@ with col1:
 
 import sqlite3
 
-import sqlite3
-import pandas as pd
-import streamlit as st
-
 # --- SQLite Hilfsfunktionen ---
 def get_connection():
     return sqlite3.connect("parameter_sets.db")
