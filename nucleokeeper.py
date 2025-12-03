@@ -239,13 +239,13 @@ default_sets = {
         "kernel_size_close": 3,
         "marker_radius": 5
     },
-    "experiment1": {
-        "kalibrier_radius": 20,
-        "min_konturflaeche": 500,
-        "dedup_distanz": 30,
-        "kernel_size_open": 5,
-        "kernel_size_close": 5,
-        "marker_radius": 8
+    "Set 1": {
+        "kalibrier_radius": 5,
+        "min_konturflaeche": 2000,
+        "dedup_distanz": 75,
+        "kernel_size_open": 2,
+        "kernel_size_close": 2,
+        "marker_radius": 4
     }
 }
 
