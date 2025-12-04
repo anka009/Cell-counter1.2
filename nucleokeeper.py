@@ -506,6 +506,102 @@ with colB:
                 st.download_button("📥 Download Channel (PNG)", f.read(), file_name=buf, mime="image/png")
         else:
             st.info("Keine Deconvolution im Cache verfügbar.")
+# =========================================================
+#      STAIN-SAMPLING-MODUS – AUTOMATISCHER VEKTOR-VORSCHLAG
+# =========================================================
+
+# Initialisierung
+if "stain_sampling" not in st.session_state:
+    st.session_state.stain_sampling = False
+    st.session_state.stain_samples = []   # speichert OD-Vektoren
+
+# --- Modus starten ---
+if st.button("🎨 Stain-Vektor messen"):
+    st.session_state.stain_sampling = True
+    st.session_state.stain_samples = []
+    st.info("Stain-Sampling-Modus aktiv – bitte auf mehrere reine Bereiche klicken.")
+    st.stop()
+
+# Wenn Modus NICHT aktiv → normal weiter
+if not st.session_state.stain_sampling:
+    pass  # dein Haupt-Skript läuft hier weiter
+
+
+# =========================================================
+# STAIN-SAMPLING UI + Klickverarbeitung (läuft nur im Modus)
+# =========================================================
+
+st.subheader("🎨 Stain-Sampling-Modus aktiv")
+st.caption("Klicke auf 1–5 farbreine Stellen. Danach Vorschlag unten.")
+
+coords = streamlit_image_coordinates(
+    Image.fromarray(display_canvas.copy()),
+    key="stain_sampling_clickmap",
+    width=DISPLAY_WIDTH
+)
+
+# Wenn Klick erfolgt
+if coords is not None:
+
+    x_disp, y_disp = int(coords["x"]), int(coords["y"])
+    x_orig = int(round(x_disp / scale))
+    y_orig = int(round(y_disp / scale))
+
+    patch = extract_patch(image_orig, x_orig, y_orig, calib_radius)
+
+    od_vec = median_od_vector_from_patch(patch)
+
+    if od_vec is not None:
+        # Normieren
+        od_norm = od_vec / (np.linalg.norm(od_vec) + 1e-12)
+        st.session_state.stain_samples.append(od_norm)
+
+        # Kreis zur Rückmeldung
+        disp = display_canvas.copy()
+        cv2.circle(disp, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
+        st.image(disp, caption=f"Messpunkt {len(st.session_state.stain_samples)} aufgenommen", use_column_width=True)
+
+        st.success(f"Vektor {len(st.session_state.stain_samples)} gespeichert: {np.round(od_norm,4)}")
+
+    else:
+        st.warning("OD-Vektor nicht berechenbar – wähle bitte eine farbreine Stelle.")
+
+# =========================================================
+#      Automatische Vektor-Empfehlung, sobald Samples da sind
+# =========================================================
+
+if len(st.session_state.stain_samples) > 0:
+
+    samples = np.vstack(st.session_state.stain_samples)
+    proposal = np.median(samples, axis=0)
+    proposal /= (np.linalg.norm(proposal) + 1e-12)
+
+    st.markdown("### 📌 Vorschlag für neuen Stain-Vektor (Median aus Klicks)")
+    st.code(np.round(proposal, 4).tolist())
+
+    # Beispiel: alter Vektor (aus deinem Script UI)
+    st.markdown("### 🔁 Vergleich:")
+    st.write("Alter Vektor:")
+    st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
+
+    st.write("Neuer vorgeschlagener Vektor:")
+    st.code(np.round(proposal, 4).tolist())
+
+    # ====== BUTTONS: ÜBERNEHMEN / VERWERFEN ======
+    colA, colB = st.columns(2)
+
+    with colA:
+        if st.button("✅ Übernehmen"):
+            st.session_state.current_stain_vector = proposal
+            st.session_state.stain_sampling = False
+            st.success("Neuer Stain-Vektor übernommen.")
+            st.stop()
+
+    with colB:
+        if st.button("❌ Verwerfen"):
+            st.session_state.stain_sampling = False
+            st.info("Sampling abgebrochen – alter Vektor bleibt erhalten.")
+            st.stop()
 
 # -------------------- CSV Export --------------------
 if st.session_state.all_points:
