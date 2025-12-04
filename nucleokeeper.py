@@ -506,102 +506,84 @@ with colB:
                 st.download_button("📥 Download Channel (PNG)", f.read(), file_name=buf, mime="image/png")
         else:
             st.info("Keine Deconvolution im Cache verfügbar.")
-# =========================================================
-#      STAIN-SAMPLING-MODUS – AUTOMATISCHER VEKTOR-VORSCHLAG
-# =========================================================
+# ----------------------------------------
+# Session-State initialisieren
+# ----------------------------------------
+if "vector_mode_active" not in st.session_state:
+    st.session_state.vector_mode_active = False
 
-# Initialisierung
-if "stain_sampling" not in st.session_state:
-    st.session_state.stain_sampling = False
-    st.session_state.stain_samples = []   # speichert OD-Vektoren
+if "current_stain_vector" not in st.session_state:
+    st.session_state.current_stain_vector = None
 
-# --- Modus starten ---
-if st.button("🎨 Stain-Vektor messen"):
-    st.session_state.stain_sampling = True
-    st.session_state.stain_samples = []
-    st.info("Stain-Sampling-Modus aktiv – bitte auf mehrere reine Bereiche klicken.")
-    st.stop()
-
-# Wenn Modus NICHT aktiv → normal weiter
-if not st.session_state.stain_sampling:
-    pass  # dein Haupt-Skript läuft hier weiter
+if "clicked_vector" not in st.session_state:
+    st.session_state.clicked_vector = None
 
 
-# =========================================================
-# STAIN-SAMPLING UI + Klickverarbeitung (läuft nur im Modus)
-# =========================================================
+# ----------------------------------------
+# Button: Farbvektor-Prüf-Modus
+# ----------------------------------------
+st.markdown("### 🎨 Farbvektor prüfen")
+if st.button("🔍 Farbvektor-Prüf-Modus aktivieren"):
+    st.session_state.vector_mode_active = True
+    st.session_state.clicked_vector = None
+    st.success("Klicke jetzt auf ein Objekt im Bild, um den optimalen Farbvektor zu berechnen.")
 
-st.subheader("🎨 Stain-Sampling-Modus aktiv")
-st.caption("Klicke auf 1–5 farbreine Stellen. Danach Vorschlag unten.")
 
+# ----------------------------------------
+# Bildanzeige + Klick erfassen
+# ----------------------------------------
 coords = streamlit_image_coordinates(
-    Image.fromarray(display_canvas.copy()),
-    key="stain_sampling_clickmap",
-    width=DISPLAY_WIDTH
+    image,
+    key="vec_test_click",
+    disabled=not st.session_state.vector_mode_active
 )
 
-# Wenn Klick erfolgt
-if coords is not None:
+# ----------------------------------------
+# Verarbeitung nur, wenn Modus aktiv + Klick existiert
+# ----------------------------------------
+if st.session_state.vector_mode_active and coords is not None:
+    x = int(coords["x"])
+    y = int(coords["y"])
+    r = st.session_state.calibration_radius  # deinen Radius verwenden
 
-    x_disp, y_disp = int(coords["x"]), int(coords["y"])
-    x_orig = int(round(x_disp / scale))
-    y_orig = int(round(y_disp / scale))
+    # ROI extrahieren
+    y1 = max(0, y - r)
+    y2 = min(image.shape[0], y + r)
+    x1 = max(0, x - r)
+    x2 = min(image.shape[1], x + r)
 
-    patch = extract_patch(image_orig, x_orig, y_orig, calib_radius)
+    roi = image[y1:y2, x1:x2]
 
-    od_vec = median_od_vector_from_patch(patch)
+    # Normalisieren
+    roi_norm = roi.astype(np.float32)
+    roi_norm /= (roi_norm.sum(axis=2, keepdims=True) + 1e-6)
 
-    if od_vec is not None:
-        # Normieren
-        od_norm = od_vec / (np.linalg.norm(od_vec) + 1e-12)
-        st.session_state.stain_samples.append(od_norm)
+    # Durchschnittliche "optimalen" RGB-Vector
+    mean_vec = np.mean(roi_norm.reshape(-1, 3), axis=0)
 
-        # Kreis zur Rückmeldung
-        disp = display_canvas.copy()
-        cv2.circle(disp, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
-        st.image(disp, caption=f"Messpunkt {len(st.session_state.stain_samples)} aufgenommen", use_column_width=True)
+    st.session_state.clicked_vector = mean_vec
 
-        st.success(f"Vektor {len(st.session_state.stain_samples)} gespeichert: {np.round(od_norm,4)}")
+    st.success("Vektor berechnet! Siehe unten.")
 
-    else:
-        st.warning("OD-Vektor nicht berechenbar – wähle bitte eine farbreine Stelle.")
+    st.write("### 📌 Vorgeschlagener neuer Vektor")
+    st.code(np.round(mean_vec, 4).tolist())
 
-# =========================================================
-#      Automatische Vektor-Empfehlung, sobald Samples da sind
-# =========================================================
+    # Button: übernehmen
+    if st.button("👉 Diesen Vektor übernehmen"):
+        st.session_state.current_stain_vector = mean_vec
+        st.session_state.vector_mode_active = False
+        st.success("Neuer Vektor wurde übernommen!")
 
-if len(st.session_state.stain_samples) > 0:
 
-    samples = np.vstack(st.session_state.stain_samples)
-    proposal = np.median(samples, axis=0)
-    proposal /= (np.linalg.norm(proposal) + 1e-12)
+# ----------------------------------------
+# Aktueller Vektor anzeigen
+# ----------------------------------------
+st.markdown("### 🎯 Aktueller verwendeter Farbvektor")
 
-    st.markdown("### 📌 Vorschlag für neuen Stain-Vektor (Median aus Klicks)")
-    st.code(np.round(proposal, 4).tolist())
-
-    # Beispiel: alter Vektor (aus deinem Script UI)
-    st.markdown("### 🔁 Vergleich:")
-    st.write("Alter Vektor:")
+if st.session_state.current_stain_vector is None:
+    st.info("Noch kein Farbvektor gesetzt.")
+else:
     st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
-
-    st.write("Neuer vorgeschlagener Vektor:")
-    st.code(np.round(proposal, 4).tolist())
-
-    # ====== BUTTONS: ÜBERNEHMEN / VERWERFEN ======
-    colA, colB = st.columns(2)
-
-    with colA:
-        if st.button("✅ Übernehmen"):
-            st.session_state.current_stain_vector = proposal
-            st.session_state.stain_sampling = False
-            st.success("Neuer Stain-Vektor übernommen.")
-            st.stop()
-
-    with colB:
-        if st.button("❌ Verwerfen"):
-            st.session_state.stain_sampling = False
-            st.info("Sampling abgebrochen – alter Vektor bleibt erhalten.")
-            st.stop()
 
 # -------------------- CSV Export --------------------
 if st.session_state.all_points:
