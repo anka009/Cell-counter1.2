@@ -506,84 +506,98 @@ with colB:
                 st.download_button("📥 Download Channel (PNG)", f.read(), file_name=buf, mime="image/png")
         else:
             st.info("Keine Deconvolution im Cache verfügbar.")
-# ----------------------------------------
-# Session-State initialisieren
-# ----------------------------------------
+# ========================================
+#    FARBVEKTOR-PRÜFMODUS (klickbasiert)
+# ========================================
+
+# --- Session-State initialisieren ---
 if "vector_mode_active" not in st.session_state:
     st.session_state.vector_mode_active = False
-
 if "current_stain_vector" not in st.session_state:
-    st.session_state.current_stain_vector = None
-
+    st.session_state.current_stain_vector = np.array([0.27, 0.57, 0.78], dtype=float)  # Standard
 if "clicked_vector" not in st.session_state:
     st.session_state.clicked_vector = None
+if "stain_samples" not in st.session_state:
+    st.session_state.stain_samples = []
 
-
-# ----------------------------------------
-# Button: Farbvektor-Prüf-Modus
-# ----------------------------------------
+# --- Button: Modus aktivieren ---
 st.markdown("### 🎨 Farbvektor prüfen")
-if st.button("🔍 Farbvektor-Prüf-Modus aktivieren"):
-    st.session_state.vector_mode_active = True
-    st.session_state.clicked_vector = None
-    st.success("Klicke jetzt auf ein Objekt im Bild, um den optimalen Farbvektor zu berechnen.")
+if st.button("🔍 Stain-Sampling-Modus aktivieren"):
+    if image_orig is None:
+        st.warning("⚠️ Kein Bild geladen – bitte zuerst hochladen.")
+    else:
+        st.session_state.vector_mode_active = True
+        st.session_state.stain_samples = []
+        st.session_state.clicked_vector = None
+        st.info("Klicke jetzt auf 1–5 farbreine Stellen im Bild.")
 
+# --- nur wenn Bild vorhanden ---
+if st.session_state.vector_mode_active and image_orig is not None:
 
-# ----------------------------------------
-# Bildanzeige + Klick erfassen
-# ----------------------------------------
-coords = streamlit_image_coordinates(
-    image_orig,
-    key="vec_test_click",
-    disabled=not st.session_state.vector_mode_active
-)
+    coords = streamlit_image_coordinates(
+        Image.fromarray(image_disp.copy()),
+        key="vec_test_click",
+        disabled=False,
+        width=DISPLAY_WIDTH
+    )
 
-# ----------------------------------------
-# Verarbeitung nur, wenn Modus aktiv + Klick existiert
-# ----------------------------------------
-if st.session_state.vector_mode_active and coords is not None:
-    x = int(coords["x"])
-    y = int(coords["y"])
-    r = st.session_state.calibration_radius  # deinen Radius verwenden
+    if coords is not None:
+        x_disp, y_disp = int(coords["x"]), int(coords["y"])
+        # in Original-Koords umrechnen
+        x_orig = int(round(x_disp / scale))
+        y_orig = int(round(y_disp / scale))
 
-    # ROI extrahieren
-    y1 = max(0, y - r)
-    y2 = min(image.shape[0], y + r)
-    x1 = max(0, x - r)
-    x2 = min(image.shape[1], x + r)
+        # Patch extrahieren
+        patch = extract_patch(image_orig, x_orig, y_orig, calib_radius)
+        vec = median_od_vector_from_patch(patch)
 
-    roi = image[y1:y2, x1:x2]
+        if vec is not None:
+            vec = normalize_vector(vec)
+            st.session_state.stain_samples.append(vec)
+            st.session_state.clicked_vector = vec
 
-    # Normalisieren
-    roi_norm = roi.astype(np.float32)
-    roi_norm /= (roi_norm.sum(axis=2, keepdims=True) + 1e-6)
+            # Kreis im Display zur Rückmeldung
+            disp = image_disp.copy()
+            cv2.circle(disp, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
+            st.image(disp, caption=f"Messpunkt {len(st.session_state.stain_samples)} aufgenommen", use_column_width=True)
+            st.success(f"Vektor gespeichert: {np.round(vec, 4)}")
+        else:
+            st.warning("Patch unbrauchbar – bitte anders klicken.")
 
-    # Durchschnittliche "optimalen" RGB-Vector
-    mean_vec = np.mean(roi_norm.reshape(-1, 3), axis=0)
+    # Median-Vektor berechnen, sobald mindestens 1 Sample vorhanden
+    if st.session_state.stain_samples:
+        samples = np.vstack(st.session_state.stain_samples)
+        proposal = np.median(samples, axis=0)
+        proposal = normalize_vector(proposal)
 
-    st.session_state.clicked_vector = mean_vec
+        st.markdown("### 📌 Vorschlag für neuen Stain-Vektor (Median aller Klicks)")
+        st.code(np.round(proposal, 4).tolist())
 
-    st.success("Vektor berechnet! Siehe unten.")
+        # Vergleich mit aktuellem Vektor
+        st.markdown("### 🔁 Vergleich mit aktuellem Vektor")
+        st.write("Alter Vektor:")
+        st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
+        st.write("Neuer Vorschlag:")
+        st.code(np.round(proposal, 4).tolist())
 
-    st.write("### 📌 Vorgeschlagener neuer Vektor")
-    st.code(np.round(mean_vec, 4).tolist())
+        # Buttons: Übernehmen / Verwerfen
+        colA, colB = st.columns(2)
+        with colA:
+            if st.button("✅ Übernehmen"):
+                st.session_state.current_stain_vector = proposal
+                st.session_state.vector_mode_active = False
+                st.success("Neuer Stain-Vektor übernommen!")
+        with colB:
+            if st.button("❌ Verwerfen"):
+                st.session_state.vector_mode_active = False
+                st.info("Sampling abgebrochen – alter Vektor bleibt erhalten.")
 
-    # Button: übernehmen
-    if st.button("👉 Diesen Vektor übernehmen"):
-        st.session_state.current_stain_vector = mean_vec
-        st.session_state.vector_mode_active = False
-        st.success("Neuer Vektor wurde übernommen!")
-
-
-# ----------------------------------------
-# Aktueller Vektor anzeigen
-# ----------------------------------------
-st.markdown("### 🎯 Aktueller verwendeter Farbvektor")
-
-if st.session_state.current_stain_vector is None:
-    st.info("Noch kein Farbvektor gesetzt.")
-else:
+# --- Aktueller Vektor immer anzeigen ---
+st.markdown("### 🎯 Aktuell verwendeter Farbvektor")
+if st.session_state.current_stain_vector is not None:
     st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
+else:
+    st.info("Noch kein Farbvektor gesetzt.")
 
 # -------------------- CSV Export --------------------
 if st.session_state.all_points:
