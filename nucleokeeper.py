@@ -534,8 +534,8 @@ if st.button("🔍 Stain-Sampling-Modus aktivieren"):
 # --- nur wenn Bild vorhanden ---
 if st.session_state.vector_mode_active and image_orig is not None:
 
-# BGR (OpenCV) -> RGB
-disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB)
+    # BGR (OpenCV) -> RGB
+    disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB)
 
 coords = streamlit_image_coordinates(
     Image.fromarray(disp_rgb),
