@@ -511,10 +511,11 @@ with colB:
 # ========================================
 
 # --- Session-State initialisieren ---
-for key in ["vector_mode_active", "current_stain_vector", "clicked_vector", "stain_samples"]:
+for key in ["vector_mode_active", "clicked_vector", "stain_samples", "current_stain_vector"]:
     if key not in st.session_state:
         if key == "current_stain_vector":
-            st.session_state[key] = np.array([0.27, 0.57, 0.78], dtype=float)  # Standard-Chromogen
+            # Standard-Chromogen
+            st.session_state[key] = np.array([0.27, 0.57, 0.78], dtype=float)
         elif key == "stain_samples":
             st.session_state[key] = []
         else:
@@ -534,9 +535,11 @@ if st.button("🔍 Stain-Sampling-Modus aktivieren"):
 # --- Nur wenn Modus aktiv und Bild vorhanden ---
 if st.session_state.vector_mode_active and image_orig is not None:
 
-    # BGR -> RGB + uint8
-    disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB).astype(np.uint8)
+    # OpenCV BGR -> RGB + uint8
+    disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB)
+    disp_rgb = np.clip(disp_rgb, 0, 255).astype(np.uint8)
 
+    # streamlit_image_coordinates erwartet PIL.Image
     coords = streamlit_image_coordinates(
         Image.fromarray(disp_rgb),
         key="vec_test_click",
@@ -597,10 +600,7 @@ if st.session_state.vector_mode_active and image_orig is not None:
 
 # --- Aktueller Vektor immer anzeigen ---
 st.markdown("### 🎯 Aktuell verwendeter Farbvektor")
-if st.session_state.current_stain_vector is not None:
-    st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
-else:
-    st.info("Noch kein Farbvektor gesetzt.")
+st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
 
 # -------------------- CSV Export --------------------
 if st.session_state.all_points:
