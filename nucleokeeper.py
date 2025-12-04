@@ -511,14 +511,14 @@ with colB:
 # ========================================
 
 # --- Session-State initialisieren ---
-if "vector_mode_active" not in st.session_state:
-    st.session_state.vector_mode_active = False
-if "current_stain_vector" not in st.session_state:
-    st.session_state.current_stain_vector = np.array([0.27, 0.57, 0.78], dtype=float)  # Standard
-if "clicked_vector" not in st.session_state:
-    st.session_state.clicked_vector = None
-if "stain_samples" not in st.session_state:
-    st.session_state.stain_samples = []
+for key in ["vector_mode_active", "current_stain_vector", "clicked_vector", "stain_samples"]:
+    if key not in st.session_state:
+        if key == "current_stain_vector":
+            st.session_state[key] = np.array([0.27, 0.57, 0.78], dtype=float)  # Standard-Chromogen
+        elif key == "stain_samples":
+            st.session_state[key] = []
+        else:
+            st.session_state[key] = False if "active" in key else None
 
 # --- Button: Modus aktivieren ---
 st.markdown("### 🎨 Farbvektor prüfen")
@@ -531,10 +531,10 @@ if st.button("🔍 Stain-Sampling-Modus aktivieren"):
         st.session_state.clicked_vector = None
         st.info("Klicke jetzt auf 1–5 farbreine Stellen im Bild.")
 
-# --- nur wenn Modus aktiv ist und Bild vorhanden ---
+# --- Nur wenn Modus aktiv und Bild vorhanden ---
 if st.session_state.vector_mode_active and image_orig is not None:
 
-    # BGR -> RGB + uint8 für PIL
+    # BGR -> RGB + uint8
     disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB).astype(np.uint8)
 
     coords = streamlit_image_coordinates(
