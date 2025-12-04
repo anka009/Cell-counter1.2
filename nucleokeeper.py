@@ -533,7 +533,7 @@ if st.button("🔍 Farbvektor-Prüf-Modus aktivieren"):
 # Bildanzeige + Klick erfassen
 # ----------------------------------------
 coords = streamlit_image_coordinates(
-    image,
+    image_orig,
     key="vec_test_click",
     disabled=not st.session_state.vector_mode_active
 )
