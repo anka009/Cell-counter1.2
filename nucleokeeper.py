@@ -570,10 +570,10 @@ if st.session_state.vector_mode_active and image_disp is not None:
             st.session_state.clicked_vector = vec
 
             # --- Kreis-Markierung ---
-            disp = image_disp.copy()
-            cv2.circle(disp, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
-            disp_rgb_draw = cv2.cvtColor(disp, cv2.COLOR_BGR2RGB)
-            st.image(disp_rgb_draw, caption=f"Messpunkt {len(st.session_state.stain_samples)} aufgenommen", use_column_width=True)
+            disp_draw = image_disp.copy()
+            cv2.circle(disp_draw, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
+            disp_draw_rgb = cv2.cvtColor(disp_draw, cv2.COLOR_BGR2RGB)
+            st.image(disp_draw_rgb, caption=f"Messpunkt {len(st.session_state.stain_samples)} aufgenommen", use_column_width=True)
             st.success(f"Vektor gespeichert: {np.round(vec, 4)}")
         else:
             st.warning("Patch unbrauchbar – bitte anders klicken.")
@@ -609,7 +609,6 @@ if st.session_state.vector_mode_active and image_disp is not None:
 # --- Aktueller Vektor immer anzeigen ---
 st.markdown("### 🎯 Aktuell verwendeter Farbvektor")
 st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
-
 
 # -------------------- CSV Export --------------------
 if st.session_state.all_points:
