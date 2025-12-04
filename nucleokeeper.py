@@ -514,8 +514,7 @@ with colB:
 for key in ["vector_mode_active", "clicked_vector", "stain_samples", "current_stain_vector"]:
     if key not in st.session_state:
         if key == "current_stain_vector":
-            # Standard-Chromogen
-            st.session_state[key] = np.array([0.27, 0.57, 0.78], dtype=float)
+            st.session_state[key] = np.array([0.27, 0.57, 0.78], dtype=float)  # Standard-Chromogen
         elif key == "stain_samples":
             st.session_state[key] = []
         else:
@@ -536,15 +535,21 @@ if st.button("🔍 Stain-Sampling-Modus aktivieren"):
 if st.session_state.vector_mode_active and image_disp is not None:
 
     # --- RGB-Konvertierung robust ---
-    if image_disp.ndim == 3 and image_disp.shape[2] == 3:
-        disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB)
+    disp_rgb = image_disp.copy()
+    if disp_rgb.ndim == 2:
+        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_GRAY2RGB)
+    elif disp_rgb.shape[2] == 3:
+        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_BGR2RGB)
     else:
-        disp_rgb = cv2.cvtColor(cv2.cvtColor(image_disp, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
+        st.error("Bild hat falsche Form für streamlit_image_coordinates")
+        st.stop()
+
     disp_rgb = np.clip(disp_rgb, 0, 255).astype(np.uint8)
+    pil_disp = Image.fromarray(disp_rgb)
 
     # --- Klickkoordinaten erfassen ---
     coords = streamlit_image_coordinates(
-        Image.fromarray(disp_rgb),
+        pil_disp,
         key="vec_test_click",
         disabled=False,
         width=DISPLAY_WIDTH
@@ -564,7 +569,7 @@ if st.session_state.vector_mode_active and image_disp is not None:
             st.session_state.stain_samples.append(vec)
             st.session_state.clicked_vector = vec
 
-            # --- Kreis im Display zur Rückmeldung ---
+            # --- Kreis-Markierung ---
             disp = image_disp.copy()
             cv2.circle(disp, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
             disp_rgb_draw = cv2.cvtColor(disp, cv2.COLOR_BGR2RGB)
@@ -604,6 +609,7 @@ if st.session_state.vector_mode_active and image_disp is not None:
 # --- Aktueller Vektor immer anzeigen ---
 st.markdown("### 🎯 Aktuell verwendeter Farbvektor")
 st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
+
 
 # -------------------- CSV Export --------------------
 if st.session_state.all_points:
