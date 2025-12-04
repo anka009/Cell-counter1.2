@@ -533,13 +533,16 @@ if st.button("🔍 Stain-Sampling-Modus aktivieren"):
         st.info("Klicke jetzt auf 1–5 farbreine Stellen im Bild.")
 
 # --- Nur wenn Modus aktiv und Bild vorhanden ---
-if st.session_state.vector_mode_active and image_orig is not None:
+if st.session_state.vector_mode_active and image_disp is not None:
 
-    # OpenCV BGR -> RGB + uint8
-    disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB)
+    # --- RGB-Konvertierung robust ---
+    if image_disp.ndim == 3 and image_disp.shape[2] == 3:
+        disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB)
+    else:
+        disp_rgb = cv2.cvtColor(cv2.cvtColor(image_disp, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2RGB)
     disp_rgb = np.clip(disp_rgb, 0, 255).astype(np.uint8)
 
-    # streamlit_image_coordinates erwartet PIL.Image
+    # --- Klickkoordinaten erfassen ---
     coords = streamlit_image_coordinates(
         Image.fromarray(disp_rgb),
         key="vec_test_click",
@@ -552,7 +555,7 @@ if st.session_state.vector_mode_active and image_orig is not None:
         x_orig = int(round(x_disp / scale))
         y_orig = int(round(y_disp / scale))
 
-        # Patch extrahieren
+        # --- Patch extrahieren und Vektor berechnen ---
         patch = extract_patch(image_orig, x_orig, y_orig, calib_radius)
         vec = median_od_vector_from_patch(patch)
 
@@ -561,7 +564,7 @@ if st.session_state.vector_mode_active and image_orig is not None:
             st.session_state.stain_samples.append(vec)
             st.session_state.clicked_vector = vec
 
-            # Kreis im Display zur Rückmeldung
+            # --- Kreis im Display zur Rückmeldung ---
             disp = image_disp.copy()
             cv2.circle(disp, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
             disp_rgb_draw = cv2.cvtColor(disp, cv2.COLOR_BGR2RGB)
@@ -570,7 +573,7 @@ if st.session_state.vector_mode_active and image_orig is not None:
         else:
             st.warning("Patch unbrauchbar – bitte anders klicken.")
 
-    # Median-Vektor berechnen, sobald mindestens 1 Sample vorhanden
+    # --- Median-Vektor berechnen, sobald mindestens 1 Sample vorhanden ---
     if st.session_state.stain_samples:
         samples = np.vstack(st.session_state.stain_samples)
         proposal = np.median(samples, axis=0)
@@ -579,14 +582,14 @@ if st.session_state.vector_mode_active and image_orig is not None:
         st.markdown("### 📌 Vorschlag für neuen Stain-Vektor (Median aller Klicks)")
         st.code(np.round(proposal, 4).tolist())
 
-        # Vergleich mit aktuellem Vektor
+        # --- Vergleich mit aktuellem Vektor ---
         st.markdown("### 🔁 Vergleich mit aktuellem Vektor")
         st.write("Alter Vektor:")
         st.code(np.round(st.session_state.current_stain_vector, 4).tolist())
         st.write("Neuer Vorschlag:")
         st.code(np.round(proposal, 4).tolist())
 
-        # Buttons: Übernehmen / Verwerfen
+        # --- Buttons: Übernehmen / Verwerfen ---
         colA, colB = st.columns(2)
         with colA:
             if st.button("✅ Übernehmen"):
