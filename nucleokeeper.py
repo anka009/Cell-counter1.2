@@ -531,11 +531,11 @@ if st.button("🔍 Stain-Sampling-Modus aktivieren"):
         st.session_state.clicked_vector = None
         st.info("Klicke jetzt auf 1–5 farbreine Stellen im Bild.")
 
-# --- nur wenn Bild vorhanden ---
+# --- nur wenn Modus aktiv ist und Bild vorhanden ---
 if st.session_state.vector_mode_active and image_orig is not None:
 
-    # BGR (OpenCV) -> RGB
-    disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB)
+    # BGR -> RGB + uint8 für PIL
+    disp_rgb = cv2.cvtColor(image_disp, cv2.COLOR_BGR2RGB).astype(np.uint8)
 
     coords = streamlit_image_coordinates(
         Image.fromarray(disp_rgb),
@@ -546,7 +546,6 @@ if st.session_state.vector_mode_active and image_orig is not None:
 
     if coords is not None:
         x_disp, y_disp = int(coords["x"]), int(coords["y"])
-        # in Original-Koords umrechnen
         x_orig = int(round(x_disp / scale))
         y_orig = int(round(y_disp / scale))
 
@@ -562,7 +561,8 @@ if st.session_state.vector_mode_active and image_orig is not None:
             # Kreis im Display zur Rückmeldung
             disp = image_disp.copy()
             cv2.circle(disp, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
-            st.image(disp, caption=f"Messpunkt {len(st.session_state.stain_samples)} aufgenommen", use_column_width=True)
+            disp_rgb_draw = cv2.cvtColor(disp, cv2.COLOR_BGR2RGB)
+            st.image(disp_rgb_draw, caption=f"Messpunkt {len(st.session_state.stain_samples)} aufgenommen", use_column_width=True)
             st.success(f"Vektor gespeichert: {np.round(vec, 4)}")
         else:
             st.warning("Patch unbrauchbar – bitte anders klicken.")
