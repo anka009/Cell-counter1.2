@@ -494,19 +494,22 @@ if coords:
             else:
                 st.info("Keine neuen Kerne (alle bereits gezählt oder keine Detektion).")
 
+# -------------------- Buttons für Vektor-Modus --------------------
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("🔬 Vektor-Modus aktivieren"):
+        st.session_state.vector_mode_active = True
+        st.success("Vektor-Modus ist jetzt aktiv.")
+with col2:
+    if st.button("❌ Vektor-Modus deaktivieren"):
+        st.session_state.vector_mode_active = False
+        st.info("Vektor-Modus wurde beendet.")
+
 # -------------------- Vektor-Testmodus --------------------
 if st.session_state.vector_mode_active:
-    # Anzeige-Bild vorbereiten (skaliert für UI)
     disp_rgb = image_disp.copy()
-    if disp_rgb.ndim == 2:
-        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_GRAY2RGB)
-    elif disp_rgb.shape[2] == 3:
-        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_BGR2RGB)
-    disp_rgb = np.clip(disp_rgb, 0, 255).astype(np.uint8)
-
     pil_disp = Image.fromarray(disp_rgb)
 
-    # Klick erfassen
     coords = streamlit_image_coordinates(
         pil_disp,
         key="vec_test_click",
@@ -514,22 +517,16 @@ if st.session_state.vector_mode_active:
     )
 
     if coords is not None:
-        # Koordinaten im Display-Bild
         x_disp, y_disp = int(coords["x"]), int(coords["y"])
-        st.write(f"Klick bei Display-Koordinaten: {x_disp}, {y_disp}")
-
-        # Rückrechnung auf Original-Koordinaten
         x_orig = int(round(x_disp / scale))
         y_orig = int(round(y_disp / scale))
-        st.write(f"→ Original-Koordinaten: {x_orig}, {y_orig}")
 
         # Patch aus Originalbild extrahieren
         calib_radius = 10
-        y_min = max(0, y_orig - calib_radius)
-        y_max = min(image_orig.shape[0], y_orig + calib_radius + 1)
-        x_min = max(0, x_orig - calib_radius)
-        x_max = min(image_orig.shape[1], x_orig + calib_radius + 1)
-        patch = image_orig[y_min:y_max, x_min:x_max]
+        patch = image_orig[
+            max(0, y_orig - calib_radius):min(image_orig.shape[0], y_orig + calib_radius + 1),
+            max(0, x_orig - calib_radius):min(image_orig.shape[1], x_orig + calib_radius + 1)
+        ]
 
         # Median-OD-Vektor berechnen
         patch_f = patch.astype(np.float32)
@@ -538,18 +535,17 @@ if st.session_state.vector_mode_active:
         norm = np.linalg.norm(vec)
         vec_norm = vec / norm if norm > 1e-12 else vec
 
-        # Ergebnis anzeigen
         st.image(patch, caption="Extrahierter Patch aus Originalbild")
         st.code(np.round(vec_norm, 4).tolist())
 
         # Buttons für Bestätigen/Abbrechen
-        col1, col2 = st.columns(2)
-        with col1:
+        colA, colB = st.columns(2)
+        with colA:
             if st.button("✅ Vektor übernehmen"):
                 st.session_state.stain_samples.append(vec_norm)
                 st.session_state.current_stain_vector = vec_norm
                 st.success("Vektor übernommen und gespeichert.")
-        with col2:
+        with colB:
             if st.button("❌ Abbrechen"):
                 st.warning("Vektor verworfen.")
 
