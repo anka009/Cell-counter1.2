@@ -6,6 +6,23 @@ from PIL import Image
 from streamlit_image_coordinates import streamlit_image_coordinates
 import pandas as pd
 
+# -------------------- Session-State Initialisierung --------------------
+defaults = {
+    "vector_mode_active": False,       # Schalter für Vektor-Testmodus
+    "stain_samples": [],               # Liste der übernommenen Vektoren
+    "current_stain_vector": None,      # zuletzt berechneter Vektor
+    "groups": [],                      # Zellgruppen
+    "all_points": [],                  # alle gezählten Punkte
+    "C_cache": None,                   # Cache für Deconvolution-Matrix
+    "last_M_hash": None,               # Hash für Matrix-Vergleich
+    "history": [],                     # Historie für Undo/Redo
+    "last_file": None                  # zuletzt hochgeladene Datei
+}
+
+for key, val in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
+
 st.set_page_config(page_title="Iterative Kern-Zählung (OD + Deconv) — v2", layout="wide")
 st.markdown(
     "<h3 style='color:darkred; font-size:22px;'>🧬 Iterative Kern-Zählung — V.2</h3>",
