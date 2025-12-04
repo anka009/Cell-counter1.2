@@ -236,14 +236,16 @@ if st.sidebar.button("🟢 Farbvektor prüfen"):
 with col1:
     DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
     st.session_state.disp_width = DISPLAY_WIDTH
+# -------------------- Vektor-Testmodus --------------------
 if st.session_state.vector_mode_active:
-    # Display-Bild vorbereiten (RGB, uint8, PIL)
+    # Anzeige-Bild vorbereiten (skaliert für UI)
     disp_rgb = image_disp.copy()
     if disp_rgb.ndim == 2:
         disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_GRAY2RGB)
     elif disp_rgb.shape[2] == 3:
         disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_BGR2RGB)
     disp_rgb = np.clip(disp_rgb, 0, 255).astype(np.uint8)
+
     pil_disp = Image.fromarray(disp_rgb)
 
     # Klick erfassen
@@ -254,50 +256,37 @@ if st.session_state.vector_mode_active:
     )
 
     if coords is not None:
+        # Koordinaten im Display-Bild
         x_disp, y_disp = int(coords["x"]), int(coords["y"])
         st.write(f"Klick bei Display-Koordinaten: {x_disp}, {y_disp}")
 
-        # in Original-Koordinaten umrechnen
+        # Rückrechnung auf Original-Koordinaten
         x_orig = int(round(x_disp / scale))
         y_orig = int(round(y_disp / scale))
+        st.write(f"→ Original-Koordinaten: {x_orig}, {y_orig}")
 
-        # Patch extrahieren
+        # Patch aus Originalbild extrahieren
+        calib_radius = 10
         y_min = max(0, y_orig - calib_radius)
         y_max = min(image_orig.shape[0], y_orig + calib_radius + 1)
         x_min = max(0, x_orig - calib_radius)
         x_max = min(image_orig.shape[1], x_orig + calib_radius + 1)
         patch = image_orig[y_min:y_max, x_min:x_max]
 
-        # Median OD-Vektor berechnen
+        # Median-OD-Vektor berechnen
         patch_f = patch.astype(np.float32)
         OD = -np.log(np.clip((patch_f + 1e-6) / 255.0, 1e-8, 1.0))
         vec = np.median(OD.reshape(-1, 3), axis=0)
         norm = np.linalg.norm(vec)
         vec_norm = vec / norm if norm > 1e-12 else vec
 
+        # Ergebnis anzeigen
+        st.image(patch, caption="Extrahierter Patch aus Originalbild")
+        st.code(np.round(vec_norm, 4).tolist())
+
         # In Session speichern
         st.session_state.stain_samples.append(vec_norm)
         st.session_state.current_stain_vector = vec_norm
-
-        # Visualisierung: Kreis um Klickpunkt
-        disp_vis = disp_rgb.copy()
-        cv2.circle(disp_vis, (x_disp, y_disp), calib_radius, (255, 0, 0), 2)
-        st.image(disp_vis, caption="Patch angezeigt", use_column_width=True)
-
-        # Vektor anzeigen
-        st.code(np.round(vec_norm, 4).tolist())
-
-    # Übernehmen / Abbrechen
-    col1, col2 = st.columns([1,1])
-    with col1:
-        if st.button("✅ Vorschlag übernehmen"):
-            hema_vec0 = st.session_state.current_stain_vector
-            st.success("Vektor übernommen!")
-            st.session_state.vector_mode_active = False
-    with col2:
-        if st.button("❌ Abbrechen"):
-            st.session_state.vector_mode_active = False
-            st.info("Farbvektor-Testmodus beendet.")
 
 import json, os
 
