@@ -184,13 +184,6 @@ for k in ["groups", "all_points", "last_file", "disp_width", "C_cache", "last_M_
             st.session_state[k] = 1200
         else:
             st.session_state[k] = None
-# -------------------- Session state für Farbvektor-Testmodus --------------------
-for k in ["vector_mode_active", "stain_samples", "current_stain_vector"]:
-    if k not in st.session_state:
-        if k == "vector_mode_active":
-            st.session_state[k] = False
-        else:
-            st.session_state[k] = None if k == "current_stain_vector" else []
 
 # -------------------- UI: Upload + Parameter --------------------
 uploaded_file = st.file_uploader("Bild hochladen (jpg/png/tif)", type=["jpg", "png", "tif", "tiff"])
@@ -216,7 +209,7 @@ with col2:
         0.01, 0.9, 0.2, 0.01
     )
     
-    st.sidebar.markdown("### Startvektoren (RGB)")
+    st.sidebar.markdown("### Startvektoren (optional, RGB)")
     hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
     aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
 
@@ -227,66 +220,10 @@ with col2:
     except Exception:
         hema_vec0 = np.array([0.65, 0.70, 0.29], dtype=float)
         aec_vec0 = np.array([0.27, 0.57, 0.78], dtype=float)
-st.sidebar.markdown("---")
-if st.sidebar.button("🟢 Farbvektor prüfen"):
-    st.session_state.vector_mode_active = True
-    st.session_state.stain_samples = []
-    st.info("Farbvektor-Testmodus aktiviert: bitte ein Objekt im Bild anklicken.")
 
 with col1:
     DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
     st.session_state.disp_width = DISPLAY_WIDTH
-# -------------------- Vektor-Testmodus --------------------
-if st.session_state.vector_mode_active:
-    # Anzeige-Bild vorbereiten (skaliert für UI)
-    disp_rgb = image_disp.copy()
-    if disp_rgb.ndim == 2:
-        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_GRAY2RGB)
-    elif disp_rgb.shape[2] == 3:
-        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_BGR2RGB)
-    disp_rgb = np.clip(disp_rgb, 0, 255).astype(np.uint8)
-
-    pil_disp = Image.fromarray(disp_rgb)
-
-    # Klick erfassen
-    coords = streamlit_image_coordinates(
-        pil_disp,
-        key="vec_test_click",
-        width=DISPLAY_WIDTH
-    )
-
-    if coords is not None:
-        # Koordinaten im Display-Bild
-        x_disp, y_disp = int(coords["x"]), int(coords["y"])
-        st.write(f"Klick bei Display-Koordinaten: {x_disp}, {y_disp}")
-
-        # Rückrechnung auf Original-Koordinaten
-        x_orig = int(round(x_disp / scale))
-        y_orig = int(round(y_disp / scale))
-        st.write(f"→ Original-Koordinaten: {x_orig}, {y_orig}")
-
-        # Patch aus Originalbild extrahieren
-        calib_radius = 10
-        y_min = max(0, y_orig - calib_radius)
-        y_max = min(image_orig.shape[0], y_orig + calib_radius + 1)
-        x_min = max(0, x_orig - calib_radius)
-        x_max = min(image_orig.shape[1], x_orig + calib_radius + 1)
-        patch = image_orig[y_min:y_max, x_min:x_max]
-
-        # Median-OD-Vektor berechnen
-        patch_f = patch.astype(np.float32)
-        OD = -np.log(np.clip((patch_f + 1e-6) / 255.0, 1e-8, 1.0))
-        vec = np.median(OD.reshape(-1, 3), axis=0)
-        norm = np.linalg.norm(vec)
-        vec_norm = vec / norm if norm > 1e-12 else vec
-
-        # Ergebnis anzeigen
-        st.image(patch, caption="Extrahierter Patch aus Originalbild")
-        st.code(np.round(vec_norm, 4).tolist())
-
-        # In Session speichern
-        st.session_state.stain_samples.append(vec_norm)
-        st.session_state.current_stain_vector = vec_norm
 
 import json, os
 
@@ -340,7 +277,7 @@ kernel_size_close= params["kernel_size_close"]
 circle_radius    = params["marker_radius"]
 
 # Optionales Feintuning im Expander
-with st.sidebar.expander("Feintuning"):
+with st.sidebar.expander("Feintuning (optional)"):
     calib_radius     = st.slider("Kalibrier-Radius", 1, 30, calib_radius, key="calib_slider")
     min_area_orig    = st.number_input("Minimale Konturfläche", 1, 10000, min_area_orig, key="min_area_input")
     dedup_dist_orig  = st.number_input("Dedup-Distanz", 1, 1000, dedup_dist_orig, key="dedup_input")
@@ -539,6 +476,65 @@ if coords:
                 st.success(f"Gruppe hinzugefügt — neue Kerne: {len(new_centers)} (inkl. Klickpunkt, falls neu)")
             else:
                 st.info("Keine neuen Kerne (alle bereits gezählt oder keine Detektion).")
+
+# -------------------- Vektor-Testmodus --------------------
+if st.session_state.vector_mode_active:
+    # Anzeige-Bild vorbereiten (skaliert für UI)
+    disp_rgb = image_disp.copy()
+    if disp_rgb.ndim == 2:
+        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_GRAY2RGB)
+    elif disp_rgb.shape[2] == 3:
+        disp_rgb = cv2.cvtColor(disp_rgb, cv2.COLOR_BGR2RGB)
+    disp_rgb = np.clip(disp_rgb, 0, 255).astype(np.uint8)
+
+    pil_disp = Image.fromarray(disp_rgb)
+
+    # Klick erfassen
+    coords = streamlit_image_coordinates(
+        pil_disp,
+        key="vec_test_click",
+        width=st.session_state.disp_width
+    )
+
+    if coords is not None:
+        # Koordinaten im Display-Bild
+        x_disp, y_disp = int(coords["x"]), int(coords["y"])
+        st.write(f"Klick bei Display-Koordinaten: {x_disp}, {y_disp}")
+
+        # Rückrechnung auf Original-Koordinaten
+        x_orig = int(round(x_disp / scale))
+        y_orig = int(round(y_disp / scale))
+        st.write(f"→ Original-Koordinaten: {x_orig}, {y_orig}")
+
+        # Patch aus Originalbild extrahieren
+        calib_radius = 10
+        y_min = max(0, y_orig - calib_radius)
+        y_max = min(image_orig.shape[0], y_orig + calib_radius + 1)
+        x_min = max(0, x_orig - calib_radius)
+        x_max = min(image_orig.shape[1], x_orig + calib_radius + 1)
+        patch = image_orig[y_min:y_max, x_min:x_max]
+
+        # Median-OD-Vektor berechnen
+        patch_f = patch.astype(np.float32)
+        OD = -np.log(np.clip((patch_f + 1e-6) / 255.0, 1e-8, 1.0))
+        vec = np.median(OD.reshape(-1, 3), axis=0)
+        norm = np.linalg.norm(vec)
+        vec_norm = vec / norm if norm > 1e-12 else vec
+
+        # Ergebnis anzeigen
+        st.image(patch, caption="Extrahierter Patch aus Originalbild")
+        st.code(np.round(vec_norm, 4).tolist())
+
+        # Buttons für Bestätigen/Abbrechen
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Vektor übernehmen"):
+                st.session_state.stain_samples.append(vec_norm)
+                st.session_state.current_stain_vector = vec_norm
+                st.success("Vektor übernommen und gespeichert.")
+        with col2:
+            if st.button("❌ Abbrechen"):
+                st.warning("Vektor verworfen.")
 
 # -------------------- Ergebnis-Anzeige & Export --------------------
 st.markdown("## Ergebnisse")
