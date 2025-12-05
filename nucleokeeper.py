@@ -232,12 +232,18 @@ if uploaded_file.name != st.session_state.last_file:
 
 # Parameter- und Anzeige-Optionen
 col1, col2 = st.columns([2, 1])
+
 with col2:
     st.sidebar.markdown("### Parameter")
 with col1:
+    # Standardwert setzen, falls noch nicht vorhanden
+    if "disp_width" not in st.session_state:
+        st.session_state.disp_width = 800  # z.B. Standardbreite
+
     DISPLAY_WIDTH = st.slider(
         "Anzeige-Breite (px)", 
-        300, 1600, st.session_state.disp_width
+        300, 1600, st.session_state.disp_width,
+        key="display_width_slider"   # eindeutiger Key!
     )
     st.session_state.disp_width = DISPLAY_WIDTH
 
