@@ -203,12 +203,25 @@ for k in ["groups", "all_points", "last_file", "disp_width", "C_cache", "last_M_
             st.session_state[k] = None
 
 # -------------------- UI: Upload + Parameter --------------------
-uploaded_file = st.file_uploader("Bild hochladen (jpg/png/tif)", type=["jpg", "png", "tif", "tiff"])
+
+# Sicherstellen, dass Session-State vorbereitet ist
+if "last_file" not in st.session_state:
+    st.session_state.last_file = None
+if "disp_width" not in st.session_state:
+    st.session_state.disp_width = 1200
+
+# Bild-Upload im Sidebar
+st.sidebar.markdown("### Bild hochladen")
+uploaded_file = st.sidebar.file_uploader(
+    "Wähle ein Bild (jpg/png/tif)", 
+    type=["jpg", "png", "tif", "tiff"]
+)
+
 if not uploaded_file:
     st.info("Bitte zuerst ein Bild hochladen.")
     st.stop()
 
-# reset on new file
+# Reset bei neuem Bild
 if uploaded_file.name != st.session_state.last_file:
     st.session_state.groups = []
     st.session_state.all_points = []
@@ -217,18 +230,23 @@ if uploaded_file.name != st.session_state.last_file:
     st.session_state.history = []
     st.session_state.last_file = uploaded_file.name
 
+# Parameter- und Anzeige-Optionen
 col1, col2 = st.columns([2, 1])
+
 with col2:
     st.sidebar.markdown("### Parameter")
-    
     detection_threshold = st.sidebar.slider(
         "Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)",
         0.01, 0.9, 0.2, 0.01
     )
-   
+
 with col1:
-    DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
+    DISPLAY_WIDTH = st.slider(
+        "Anzeige-Breite (px)", 
+        300, 1600, st.session_state.disp_width
+    )
     st.session_state.disp_width = DISPLAY_WIDTH
+
 
 import json, os
 import numpy as np
