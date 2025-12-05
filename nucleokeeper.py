@@ -401,15 +401,7 @@ if st.sidebar.button("Reset (Alle Gruppen)"):
     st.session_state.C_cache = None
     st.success("Zurückgesetzt.")
 
-if st.button("ℹ️ Erklärbär zu Kernelgröße"):
-    st.info(
-        "Öffnen: entfernt kleine Störungen.\n"
-        "• Klein = wirkt lokal\n"
-        "• Groß = entfernt auch größere Flecken\n\n"
-        "Schließen: füllt kleine Lücken.\n"
-        "• Klein = füllt winzige Löcher\n"
-        "• Groß = verbindet nahe Strukturen"
-    )
+
 # -------------------- Click handling --------------------
 if coords:
     x_disp, y_disp = int(coords["x"]), int(coords["y"])
@@ -595,7 +587,15 @@ if st.session_state.all_points:
     df_unique["Y_display"] = (df_unique["Y_original"] * scale).round().astype(int)
     st.download_button("📥 CSV exportieren (unique Gesamt)", df_unique.to_csv(index=False).encode("utf-8"),
                        file_name="kern_unique_v2.csv", mime="text/csv")
-
+if st.button("ℹ️ Erklärbär zu Kernelgröße"):
+    st.info(
+        "Öffnen: entfernt kleine Störungen.\n"
+        "• Klein = wirkt lokal\n"
+        "• Groß = entfernt auch größere Flecken\n\n"
+        "Schließen: füllt kleine Lücken.\n"
+        "• Klein = füllt winzige Löcher\n"
+        "• Groß = verbindet nahe Strukturen"
+    )
 st.markdown("---")
 st.caption("Hinweise: Deconvolution wird auf dem ORIGINALbild ausgeführt. "
            "CLAHE sollte nicht vor der Deconvolution angewendet werden. "
