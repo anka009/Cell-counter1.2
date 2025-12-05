@@ -206,7 +206,7 @@ if "last_file" not in st.session_state:
 if "disp_width" not in st.session_state:
     st.session_state.disp_width = 1200
 st.sidebar.markdown(
-    "<h4 style='color:darkred; font-size:22px;'>🧬 Iterative Kern-Zählung — V.2</h4>",
+    "<h5 style='color:darkred; font-size:22px;'>🧬 Iterative Kern-Zählung — V.2</h5>",
     unsafe_allow_html=True
 )
 # Bild-Upload im Sidebar
