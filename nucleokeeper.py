@@ -281,14 +281,6 @@ else:
     with open(PARAM_FILE, "w") as f:
         json.dump(parameter_sets, f)
 
-# Sidebar: Eingabe der Vektoren (mit eindeutigen Keys!)
-hema_vec_input = st.sidebar.text_input(
-    "Hematoxylin vector (comma)", value="0.65,0.70,0.29", key="hema_vec_input"
-)
-aec_vec_input = st.sidebar.text_input(
-    "Chromogen vector (comma)", value="0.27,0.57,0.78", key="aec_vec_input"
-)
-
 # Sidebar: Auswahl des Sets
 st.sidebar.markdown("### Parametersets")
 choice = st.sidebar.radio(
@@ -300,17 +292,16 @@ choice = st.sidebar.radio(
 params = parameter_sets[choice]
 
 # Werte aus dem Set übernehmen
-hema_vec0 = np.array([float(x.strip()) for x in params["hema_vec"].split(",")], dtype=float)
-aec_vec0  = np.array([float(x.strip()) for x in params["aec_vec"].split(",")], dtype=float)
-
 calib_radius     = params["kalibrier_radius"]
 min_area_orig    = params["min_konturflaeche"]
 dedup_dist_orig  = params["dedup_distanz"]
 kernel_size_open = params["kernel_size_open"]
 kernel_size_close= params["kernel_size_close"]
 circle_radius    = params["marker_radius"]
+hema_vec         = params["hema_vec"]
+aec_vec          = params["aec_vec"]
 
-# Optionales Feintuning im Expander
+# Optionales Feintuning inkl. Vektoren
 with st.sidebar.expander("Feintuning (optional)"):
     calib_radius     = st.slider("Kalibrier-Radius", 1, 30, calib_radius, key="calib_slider")
     min_area_orig    = st.number_input("Minimale Konturfläche", 1, 10000, min_area_orig, key="min_area_input")
@@ -318,8 +309,14 @@ with st.sidebar.expander("Feintuning (optional)"):
     kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open, key="open_slider")
     kernel_size_close= st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close, key="close_slider")
     circle_radius    = st.slider("Marker-Radius", 1, 12, circle_radius, key="marker_slider")
+    hema_vec         = st.text_input("Hematoxylin vector (comma)", value=hema_vec, key="hema_vec_input")
+    aec_vec          = st.text_input("Chromogen vector (comma)", value=aec_vec, key="aec_vec_input")
 
-# Neues Set speichern (inkl. neu eingegebene Vektoren!)
+# Arrays für die weitere Verarbeitung
+hema_vec0 = np.array([float(x.strip()) for x in hema_vec.split(",")], dtype=float)
+aec_vec0  = np.array([float(x.strip()) for x in aec_vec.split(",")], dtype=float)
+
+# Neues Set speichern (inkl. Vektoren!)
 new_name = st.sidebar.text_input("Neuer Name für Parameterset", key="new_set_name")
 if st.sidebar.button("Speichern", key="save_button"):
     parameter_sets[new_name] = {
@@ -329,8 +326,8 @@ if st.sidebar.button("Speichern", key="save_button"):
         "kernel_size_open": kernel_size_open,
         "kernel_size_close": kernel_size_close,
         "marker_radius": circle_radius,
-        "hema_vec": hema_vec_input,
-        "aec_vec": aec_vec_input
+        "hema_vec": hema_vec,
+        "aec_vec": aec_vec
     }
     with open(PARAM_FILE, "w") as f:
         json.dump(parameter_sets, f)
