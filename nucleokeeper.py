@@ -305,6 +305,16 @@ with st.sidebar.expander("Feintuning (optional)"):
     dedup_dist_orig  = st.number_input("Dedup-Distanz", 1, 1000, dedup_dist_orig, key="dedup_input")
     kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open, key="open_slider")
     kernel_size_close= st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close, key="close_slider")
+    
+if st.button("ℹ️ Erklärbär zu Kernelgröße"):
+    st.info(
+        "Öffnen: entfernt kleine Störungen.\n"
+        "• Klein = wirkt lokal\n"
+        "• Groß = entfernt auch größere Flecken\n\n"
+        "Schließen: füllt kleine Lücken.\n"
+        "• Klein = füllt winzige Löcher\n"
+        "• Groß = verbindet nahe Strukturen"
+    )
     circle_radius    = st.slider("Marker-Radius", 1, 12, circle_radius, key="marker_slider")
     hema_vec         = st.text_input("Hematoxylin vector (R,G,B)", value=hema_vec, key="hema_vec_input")
     aec_vec          = st.text_input("Chromogen vector (R,G,B)", value=aec_vec, key="aec_vec_input")
