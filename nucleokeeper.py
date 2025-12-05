@@ -600,14 +600,6 @@ with st.expander("ℹ️ Erklärbär zu Kernelgröße"):
         "• Groß = verbindet nahe Strukturen"
     )
 
-if st.button("ℹ️ Erklärbär zu Kernelgröße"):
-    st.info(
-        "Öffnen: entfernt kleine Störungen.\n"
-        "• Klein = wirkt lokal\n"
-        "• Groß = entfernt auch größere Flecken\n\n"
-        "Schließen: füllt kleine Lücken.\n"
-        "• Klein = füllt winzige Löcher\n"
-        "• Groß = verbindet nahe Strukturen"
     )
 st.markdown("---")
 st.caption("Hinweise: Deconvolution wird auf dem ORIGINALbild ausgeführt. "
