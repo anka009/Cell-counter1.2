@@ -5,6 +5,7 @@ import cv2
 from PIL import Image
 from streamlit_image_coordinates import streamlit_image_coordinates
 import pandas as pd
+import json, os
 
 # -------------------- Session-State Initialisierung --------------------
 defaults = {
@@ -245,11 +246,6 @@ with col1:
         300, 1600, st.session_state.disp_width
     )
     st.session_state.disp_width = DISPLAY_WIDTH
-
-
-import json, os
-import numpy as np
-import streamlit as st
 
 PARAM_FILE = "params.json"
 
