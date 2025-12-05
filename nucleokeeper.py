@@ -236,6 +236,10 @@ col1, col2 = st.columns([2, 1])
 with col2:
     st.sidebar.markdown("### Parameter")
 
+with col1:
+    DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
+    st.session_state.disp_width = DISPLAY_WIDTH
+
 PARAM_FILE = "params.json"
 
 # Standardwerte ("Fabrikzustand")
@@ -341,9 +345,7 @@ if st.sidebar.button(f"Parameterset '{choice}' löschen", key="delete_button"):
             json.dump(parameter_sets, f)
         st.sidebar.success(f"Parameterset '{choice}' wurde gelöscht.")
         st.session_state.confirm_delete = False
-with col1:
-    DISPLAY_WIDTH = st.slider("Anzeige-Breite (px)", 300, 1600, st.session_state.disp_width)
-    st.session_state.disp_width = DISPLAY_WIDTH
+
 
 # -------------------- Prepare images (original vs display) --------------------
 image_orig = np.array(Image.open(uploaded_file).convert("RGB"))
