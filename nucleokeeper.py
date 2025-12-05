@@ -401,6 +401,12 @@ if st.sidebar.button("Reset (Alle Gruppen)"):
     st.session_state.C_cache = None
     st.success("Zurückgesetzt.")
 
+with col1:
+    DISPLAY_WIDTH = st.slider(
+        "Anzeige-Breite (px)", 
+        300, 1600, st.session_state.disp_width
+    )
+    st.session_state.disp_width = DISPLAY_WIDTH
 
 # -------------------- Click handling --------------------
 if coords:
