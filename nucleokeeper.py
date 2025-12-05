@@ -235,10 +235,6 @@ col1, col2 = st.columns([2, 1])
 
 with col2:
     st.sidebar.markdown("### Parameter")
-    detection_threshold = st.sidebar.slider(
-        "Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)",
-        0.01, 0.9, 0.2, 0.01
-    )
 
 with col1:
     DISPLAY_WIDTH = st.slider(
