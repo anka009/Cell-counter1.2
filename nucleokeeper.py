@@ -279,7 +279,7 @@ else:
         json.dump(parameter_sets, f)
 
 # Sidebar: Auswahl des Sets
-st.sidebar.markdown("### Parametersets")
+
 choice = st.sidebar.radio(
     "Wähle Parameterset",
     list(parameter_sets.keys()),
