@@ -478,7 +478,7 @@ if coords:
 
             centers_orig, mask = detect_centers_from_channel_v2(
                 channel_full,
-                threshold=detection_threshold,
+                threshold=0.2,
                 min_area=min_area_orig,
                 debug=False
             )
