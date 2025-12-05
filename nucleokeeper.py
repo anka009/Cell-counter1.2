@@ -243,6 +243,8 @@ with col1:
     st.session_state.disp_width = DISPLAY_WIDTH
 
 import json, os
+import numpy as np
+import streamlit as st
 
 PARAM_FILE = "params.json"
 
@@ -279,9 +281,13 @@ else:
     with open(PARAM_FILE, "w") as f:
         json.dump(parameter_sets, f)
 
-# Sidebar: Eingabe der Vektoren
-hema_vec = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
-aec_vec  = st.sidebar.text_input("Chromogen vector (comma)", value="0.27,0.57,0.78")
+# Sidebar: Eingabe der Vektoren (mit eindeutigen Keys!)
+hema_vec_input = st.sidebar.text_input(
+    "Hematoxylin vector (comma)", value="0.65,0.70,0.29", key="hema_vec_input"
+)
+aec_vec_input = st.sidebar.text_input(
+    "Chromogen vector (comma)", value="0.27,0.57,0.78", key="aec_vec_input"
+)
 
 # Sidebar: Auswahl des Sets
 st.sidebar.markdown("### Parametersets")
@@ -303,8 +309,6 @@ dedup_dist_orig  = params["dedup_distanz"]
 kernel_size_open = params["kernel_size_open"]
 kernel_size_close= params["kernel_size_close"]
 circle_radius    = params["marker_radius"]
-hema_vec = params["hema_vec"]
-aec_vec = params["aec_vec"]
 
 # Optionales Feintuning im Expander
 with st.sidebar.expander("Feintuning (optional)"):
@@ -315,7 +319,7 @@ with st.sidebar.expander("Feintuning (optional)"):
     kernel_size_close= st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close, key="close_slider")
     circle_radius    = st.slider("Marker-Radius", 1, 12, circle_radius, key="marker_slider")
 
-# Neues Set speichern
+# Neues Set speichern (inkl. neu eingegebene Vektoren!)
 new_name = st.sidebar.text_input("Neuer Name für Parameterset", key="new_set_name")
 if st.sidebar.button("Speichern", key="save_button"):
     parameter_sets[new_name] = {
@@ -325,8 +329,8 @@ if st.sidebar.button("Speichern", key="save_button"):
         "kernel_size_open": kernel_size_open,
         "kernel_size_close": kernel_size_close,
         "marker_radius": circle_radius,
-        "hema_vec": hema_vec,
-        "aec_vec": aec_vec
+        "hema_vec": hema_vec_input,
+        "aec_vec": aec_vec_input
     }
     with open(PARAM_FILE, "w") as f:
         json.dump(parameter_sets, f)
