@@ -587,6 +587,19 @@ if st.session_state.all_points:
     df_unique["Y_display"] = (df_unique["Y_original"] * scale).round().astype(int)
     st.download_button("📥 CSV exportieren (unique Gesamt)", df_unique.to_csv(index=False).encode("utf-8"),
                        file_name="kern_unique_v2.csv", mime="text/csv")
+kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open, key="open_slider")
+kernel_size_close = st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close, key="close_slider")
+
+with st.expander("ℹ️ Erklärbär zu Kernelgröße"):
+    st.info(
+        "Öffnen: entfernt kleine Störungen.\n"
+        "• Klein = wirkt lokal\n"
+        "• Groß = entfernt auch größere Flecken\n\n"
+        "Schließen: füllt kleine Lücken.\n"
+        "• Klein = füllt winzige Löcher\n"
+        "• Groß = verbindet nahe Strukturen"
+    )
+
 if st.button("ℹ️ Erklärbär zu Kernelgröße"):
     st.info(
         "Öffnen: entfernt kleine Störungen.\n"
