@@ -600,7 +600,6 @@ with st.expander("ℹ️ Erklärbär zu Kernelgröße"):
         "• Groß = verbindet nahe Strukturen"
     )
 
-    )
 st.markdown("---")
 st.caption("Hinweise: Deconvolution wird auf dem ORIGINALbild ausgeführt. "
            "CLAHE sollte nicht vor der Deconvolution angewendet werden. "
