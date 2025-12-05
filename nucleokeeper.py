@@ -255,6 +255,8 @@ default_sets = {
         "kernel_size_open": 3,
         "kernel_size_close": 3,
         "marker_radius": 5
+        "hema_vec": "0.65,0.70,0.29",
+        "aec_vec": "0.27,0.57,0.78"
     },
     "Set 1": {
         "kalibrier_radius": 5,
@@ -263,6 +265,8 @@ default_sets = {
         "kernel_size_open": 2,
         "kernel_size_close": 2,
         "marker_radius": 4
+        "hema_vec": "0.65,0.70,0.29",
+        "aec_vec": "0.27,0.57,0.78"
     }
 }
 
@@ -275,6 +279,10 @@ else:
     with open(PARAM_FILE, "w") as f:
         json.dump(parameter_sets, f)
 
+# Sidebar: Eingabe der Vektoren
+hema_vec = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
+aec_vec  = st.sidebar.text_input("Chromogen vector (comma)", value="0.27,0.57,0.78")
+
 # Sidebar: Auswahl des Sets
 st.sidebar.markdown("### Parametersets")
 choice = st.sidebar.radio(
@@ -286,12 +294,17 @@ choice = st.sidebar.radio(
 params = parameter_sets[choice]
 
 # Werte aus dem Set übernehmen
+hema_vec0 = np.array([float(x.strip()) for x in params["hema_vec"].split(",")], dtype=float)
+aec_vec0  = np.array([float(x.strip()) for x in params["aec_vec"].split(",")], dtype=float)
+
 calib_radius     = params["kalibrier_radius"]
 min_area_orig    = params["min_konturflaeche"]
 dedup_dist_orig  = params["dedup_distanz"]
 kernel_size_open = params["kernel_size_open"]
 kernel_size_close= params["kernel_size_close"]
 circle_radius    = params["marker_radius"]
+hema_vec = params["hema_vec"]
+aec_vec = params["aec_vec"]
 
 # Optionales Feintuning im Expander
 with st.sidebar.expander("Feintuning (optional)"):
@@ -312,6 +325,8 @@ if st.sidebar.button("Speichern", key="save_button"):
         "kernel_size_open": kernel_size_open,
         "kernel_size_close": kernel_size_close,
         "marker_radius": circle_radius
+        "hema_vec": hema_vec,
+        "aec_vec": aec_vec
     }
     with open(PARAM_FILE, "w") as f:
         json.dump(parameter_sets, f)
