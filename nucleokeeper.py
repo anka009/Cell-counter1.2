@@ -539,7 +539,7 @@ if st.session_state.vector_mode_active:
         y_orig = int(round(y_disp / scale))
 
         # Patch aus Originalbild extrahieren
-        calib_radius = 10
+        calib_radius = st.session_state.get("calib_slider", params["kalibrier_radius"])
         patch = image_orig[
             max(0, y_orig - calib_radius):min(image_orig.shape[0], y_orig + calib_radius + 1),
             max(0, x_orig - calib_radius):min(image_orig.shape[1], x_orig + calib_radius + 1)
