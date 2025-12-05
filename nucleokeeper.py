@@ -324,7 +324,7 @@ if st.sidebar.button("Speichern", key="save_button"):
         "dedup_distanz": dedup_dist_orig,
         "kernel_size_open": kernel_size_open,
         "kernel_size_close": kernel_size_close,
-        "marker_radius": circle_radius
+        "marker_radius": circle_radius,
         "hema_vec": hema_vec,
         "aec_vec": aec_vec
     }
