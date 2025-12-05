@@ -554,17 +554,6 @@ if st.session_state.vector_mode_active:
         st.image(patch, caption="Extrahierter Patch aus Originalbild")
         st.code(np.round(vec_norm, 4).tolist())
 
-        # Buttons für Bestätigen/Abbrechen
-        colA, colB = st.columns(2)
-        with colA:
-            if st.button("✅ Vektor übernehmen"):
-                st.session_state.stain_samples.append(vec_norm)
-                st.session_state.current_stain_vector = vec_norm
-                st.success("Vektor übernommen und gespeichert.")
-        with colB:
-            if st.button("❌ Abbrechen"):
-                st.warning("Vektor verworfen.")
-
 # -------------------- Ergebnis-Anzeige & Export --------------------
 st.markdown("## Ergebnisse")
 colA, colB = st.columns([2, 1])
