@@ -264,7 +264,7 @@ default_sets = {
         "dedup_distanz": 75,
         "kernel_size_open": 2,
         "kernel_size_close": 2,
-        "marker_radius": 4
+        "marker_radius": 4,
         "hema_vec": "0.65,0.70,0.29",
         "aec_vec": "0.27,0.57,0.78"
     }
