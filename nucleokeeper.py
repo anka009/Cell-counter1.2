@@ -233,9 +233,15 @@ if uploaded_file.name != st.session_state.last_file:
 # Parameter- und Anzeige-Optionen
 col1, col2 = st.columns([2, 1])
 
+with col1:
+    DISPLAY_WIDTH = st.slider(
+        "Anzeige-Breite (px)", 
+        300, 1600, st.session_state.disp_width
+    )
+    st.session_state.disp_width = DISPLAY_WIDTH
+
 with col2:
     st.sidebar.markdown("### Parameter")
-
 
 PARAM_FILE = "params.json"
 
@@ -395,12 +401,6 @@ if st.sidebar.button("Reset (Alle Gruppen)"):
     st.session_state.C_cache = None
     st.success("Zurückgesetzt.")
 
-with col1:
-    DISPLAY_WIDTH = st.slider(
-        "Anzeige-Breite (px)", 
-        300, 1600, st.session_state.disp_width
-    )
-    st.session_state.disp_width = DISPLAY_WIDTH
 
 # -------------------- Click handling --------------------
 if coords:
