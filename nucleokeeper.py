@@ -555,23 +555,6 @@ with colB:
         st.write(f"• Gruppe {i+1}: {len(g['points'])} neue Kerne")
     st.markdown(f"**Gesamt (unique Kerne): {len(st.session_state.all_points)}**")
 
-    if st.button("Speichere Maske (letzte Deconv-Channel)"):
-        if st.session_state.C_cache is not None:
-            # Save the last used target channel as an image for inspection (display size)
-            channel_to_save = st.session_state.C_cache[:, :, 0]
-            # normalize for saving
-            vmin, vmax = np.percentile(channel_to_save, [2, 99.5])
-            norm = np.clip((channel_to_save - vmin) / max(1e-8, (vmax - vmin)), 0.0, 1.0)
-            u8 = (norm * 255).astype(np.uint8)
-            u8_disp = cv2.resize(u8, (DISPLAY_WIDTH, H_disp), interpolation=cv2.INTER_AREA)
-            pil = Image.fromarray(u8_disp)
-            buf = st.session_state.last_file + "_channel.png"
-            pil.save(buf)
-            with open(buf, "rb") as f:
-                st.download_button("📥 Download Channel (PNG)", f.read(), file_name=buf, mime="image/png")
-        else:
-            st.info("Keine Deconvolution im Cache verfügbar.")
-
 # -------------------- CSV Export --------------------
 if st.session_state.all_points:
     rows = []
