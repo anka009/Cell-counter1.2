@@ -227,8 +227,8 @@ with col2:
     )
     
     st.sidebar.markdown("### Startvektoren (optional, RGB)")
-    hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
-    aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (comma)", value="0.27,0.57,0.78")
+    hema_default = st.sidebar.text_input("Hematoxylin vector (R,G,B)", value="0.65,0.70,0.29")
+    aec_default = st.sidebar.text_input("Chromogen (e.g. AEC/DAB) vector (R,G,B)", value="0.27,0.57,0.78")
 
     # parse start vectors safely
     try:
@@ -309,8 +309,8 @@ with st.sidebar.expander("Feintuning (optional)"):
     kernel_size_open = st.slider("Kernelgröße Öffnen", 1, 15, kernel_size_open, key="open_slider")
     kernel_size_close= st.slider("Kernelgröße Schließen", 1, 15, kernel_size_close, key="close_slider")
     circle_radius    = st.slider("Marker-Radius", 1, 12, circle_radius, key="marker_slider")
-    hema_vec         = st.text_input("Hematoxylin vector (comma)", value=hema_vec, key="hema_vec_input")
-    aec_vec          = st.text_input("Chromogen vector (comma)", value=aec_vec, key="aec_vec_input")
+    hema_vec         = st.text_input("Hematoxylin vector (R,G,B)", value=hema_vec, key="hema_vec_input")
+    aec_vec          = st.text_input("Chromogen vector (R,G,B)", value=aec_vec, key="aec_vec_input")
 
 # Arrays für die weitere Verarbeitung
 hema_vec0 = np.array([float(x.strip()) for x in hema_vec.split(",")], dtype=float)
